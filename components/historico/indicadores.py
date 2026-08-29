@@ -8,11 +8,11 @@ def mostrar_indicadores_historicos(df_historico):
         .groupby("anio")
         .agg(
             participaciones=(
-                "id_participante",
+                "documento",
                 "size"
             ),
             participantes_unicos=(
-                "id_participante",
+                "documento",
                 "nunique"
             )
         )

@@ -1,5 +1,6 @@
 {
     "anio": 2024,
-    "fecha_inicio": "2024-09-10",
-    "fecha_fin": "2024-09-12"
+    "fecha_inicio": "2024-01-01",
+    "fecha_fin": "2024-12-31",
+    "es_demo": false
 }

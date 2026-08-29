@@ -17,24 +17,27 @@ def mostrar_calidad_datos(df):
     # --------------------------------------------------
 
     columnas_origen = [
-        "id_participante",
-        "tipo_participante",
-        "carrera",
-        "institucion",
-        "actividad",
-        "tipo_actividad",
-        "tematica",
-        "aula",
-        "capacidad_aula",
-        "estado_qr",
-        "punto_acceso",
-        "fecha",
-        "hora_inicio_actividad",
-        "hora_fin_actividad",
-        "hora_ingreso",
-        "hora_egreso",
-        "inscripto",
-        "asistio"
+        "Nombre/s",
+        "Apellido/s",
+        "documento",
+        "mail",
+        "Miembro UNLa",
+        "Rol principal",
+        "Otro Rol principal",
+        "Investigador Carreras",
+        "Otro Investigador Carreras",
+        "Tipo inscripción",
+        "Source",
+        "IsWelcomeMailSent",
+        "QRCode",
+        "isPresent_original",
+        "IsAssistanceCertifySent"
+    ]
+
+    columnas_origen = [
+        columna
+        for columna in columnas_origen
+        if columna in df.columns
     ]
 
 
@@ -58,71 +61,25 @@ def mostrar_calidad_datos(df):
 
 
     # --------------------------------------------------
-    # DUPLICADOS
+    # DUPLICADOS Y VALIDACIONES ESPECÍFICAS
     # --------------------------------------------------
 
-    filas_duplicadas = (
-        df.duplicated().sum()
+    filas_duplicadas = df.duplicated().sum()
+
+    documentos_duplicados = (
+        (~mascaras["documento_unico"]).sum()
     )
 
-    participaciones_duplicadas = (
-        df.duplicated(
-            subset=[
-                "id_participante",
-                "actividad"
-            ]
-        ).sum()
+    documentos_faltantes = (
+        (~mascaras["documento_valido"]).sum()
     )
 
-
-    # --------------------------------------------------
-    # VALIDACIONES ESPECÍFICAS
-    # --------------------------------------------------
-
-    ids_faltantes = (
-        df["id_participante"]
-        .isna()
-        .sum()
+    mails_invalidos = (
+        (~mascaras["mail_valido"]).sum()
     )
 
-    horas_ingreso_faltantes = (
-        df["hora_ingreso"]
-        .isna()
-        .sum()
-    )
-
-    horas_egreso_faltantes = (
-        df["hora_egreso"]
-        .isna()
-        .sum()
-    )
-
-    egresos_anteriores_ingreso = (
-        df[
-            df["hora_egreso"]
-            < df["hora_ingreso"]
-        ]
-        .shape[0]
-    )
-
-    capacidades_invalidas = (
-        df[
-            df["capacidad_aula"] <= 0
-        ]
-        .shape[0]
-    )
-
-    estados_qr_validos = [
-        "Correcto",
-        "Error"
-    ]
-
-    estados_qr_invalidos = (
-        df[
-            ~df["estado_qr"]
-            .isin(estados_qr_validos)
-        ]
-        .shape[0]
+    inconsistencias_asistencia = (
+        (~mascaras["asistencia_coherente"]).sum()
     )
 
 
@@ -131,29 +88,13 @@ def mostrar_calidad_datos(df):
     # --------------------------------------------------
 
     problemas = (
-        df["id_participante"].isna()
-        |
-        df["hora_ingreso"].isna()
-        |
-        df["hora_egreso"].isna()
-        |
-        (df["hora_egreso"] < df["hora_ingreso"])
-        |
-        (df["capacidad_aula"] <= 0)
-        |
-        (~df["estado_qr"].isin(estados_qr_validos))
-        |
-        df.duplicated(
-            subset=[
-                "id_participante",
-                "actividad"
-            ]
-        )
+        (~mascaras["documento_valido"])
+        | (~mascaras["documento_unico"])
+        | (~mascaras["mail_valido"])
+        | (~mascaras["datos_completos"])
     )
 
-    registros_problematicos = (
-        problemas.sum()
-    )
+    registros_problematicos = problemas.sum()
 
     registros_sin_problemas = (
         total_registros
@@ -201,70 +142,48 @@ def mostrar_calidad_datos(df):
 
 
     # --------------------------------------------------
-    # REGISTROS UTILIZABLES POR ANÁLISIS
+    # REGISTROS UTILIZABLES POR TIPO DE VALIDACIÓN
     # --------------------------------------------------
 
-    registros_participacion = (
-        mascaras["participacion"].sum()
-    )
-
-    registros_personas = (
-        mascaras["persona_unica"].sum()
-    )
-
-    registros_permanencia = (
-        mascaras["permanencia"].sum()
-    )
-
-    registros_qr = (
-        mascaras["qr"].sum()
-    )
-
-    registros_ocupacion = (
-        mascaras["ocupacion"].sum()
-    )
-
-
     st.markdown(
-        "#### Registros utilizables por tipo de análisis"
+        "#### Registros que pasan cada validación"
     )
 
     col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
         st.metric(
-            "Participación",
-            f"{registros_participacion / total_registros * 100:.1f}%"
+            "Documento",
+            f"{mascaras['documento_valido'].mean() * 100:.1f}%"
         )
 
     with col2:
         st.metric(
-            "Personas únicas",
-            f"{registros_personas / total_registros * 100:.1f}%"
+            "Documento único",
+            f"{mascaras['documento_unico'].mean() * 100:.1f}%"
         )
 
     with col3:
         st.metric(
-            "Permanencia",
-            f"{registros_permanencia / total_registros * 100:.1f}%"
+            "Mail",
+            f"{mascaras['mail_valido'].mean() * 100:.1f}%"
         )
 
     with col4:
         st.metric(
-            "Análisis QR",
-            f"{registros_qr / total_registros * 100:.1f}%"
+            "Datos completos",
+            f"{mascaras['datos_completos'].mean() * 100:.1f}%"
         )
 
     with col5:
         st.metric(
-            "Ocupación",
-            f"{registros_ocupacion / total_registros * 100:.1f}%"
+            "Asistencia coherente",
+            f"{mascaras['asistencia_coherente'].mean() * 100:.1f}%"
         )
 
-
     st.caption(
-        "Un registro puede ser válido para un tipo de análisis "
-        "y no serlo para otro."
+        "Un registro puede fallar una validación "
+        "y ser válido para las demás."
     )
 
 
@@ -283,69 +202,57 @@ def mostrar_calidad_datos(df):
 
     with col1:
 
-        st.write("**Identificación**")
+        st.write("**Documento**")
 
-        if ids_faltantes == 0:
+        if documentos_faltantes == 0:
             st.success("Sin problemas")
         else:
             st.warning(
-                f"{ids_faltantes} registros sin ID"
+                f"{documentos_faltantes} registros sin documento"
             )
 
-        st.write("**Horarios**")
+        st.write("**Documentos duplicados**")
 
-        total_horarios_faltantes = (
-            horas_ingreso_faltantes
-            + horas_egreso_faltantes
-        )
-
-        if total_horarios_faltantes == 0:
+        if documentos_duplicados == 0:
             st.success("Sin problemas")
         else:
             st.warning(
-                f"{total_horarios_faltantes} horarios faltantes"
+                f"{documentos_duplicados} registros con "
+                f"documento repetido"
             )
 
 
     with col2:
 
-        st.write("**Participaciones duplicadas**")
+        st.write("**Mail**")
 
-        if participaciones_duplicadas == 0:
+        if mails_invalidos == 0:
             st.success("Sin problemas")
         else:
             st.warning(
-                f"{participaciones_duplicadas} posibles duplicados"
+                f"{mails_invalidos} mails con formato inválido"
             )
 
-        st.write("**Capacidad de aulas**")
+        st.write("**Filas completamente duplicadas**")
 
-        if capacidades_invalidas == 0:
+        if filas_duplicadas == 0:
             st.success("Sin problemas")
         else:
             st.warning(
-                f"{capacidades_invalidas} valores inválidos"
+                f"{filas_duplicadas} filas duplicadas"
             )
 
 
     with col3:
 
-        st.write("**Estado QR**")
+        st.write("**Asistencia vs. isPresent original**")
 
-        if estados_qr_invalidos == 0:
+        if inconsistencias_asistencia == 0:
             st.success("Sin problemas")
         else:
             st.warning(
-                f"{estados_qr_invalidos} valores inválidos"
-            )
-
-        st.write("**Orden ingreso / egreso**")
-
-        if egresos_anteriores_ingreso == 0:
-            st.success("Sin problemas")
-        else:
-            st.warning(
-                f"{egresos_anteriores_ingreso} inconsistencias"
+                f"{inconsistencias_asistencia} registros donde "
+                f"'isPresent' no coincide con la asistencia por día"
             )
 
 
@@ -357,95 +264,43 @@ def mostrar_calidad_datos(df):
         "Ver detalle de las validaciones"
     ):
 
-        st.markdown("##### Identificadores")
+        st.markdown("##### Inconsistencia de asistencia")
 
-        if ids_faltantes == 0:
-            st.success(
-                "No se detectaron identificadores faltantes."
-            )
-        else:
-            st.warning(
-                f"Se encontraron {ids_faltantes} registros "
-                f"sin identificador de participante."
-            )
+        st.write(
+            "La columna `isPresent` original del archivo puede "
+            "no coincidir con lo que indican las columnas "
+            "`Asistencia YYYY-MM-DD` día por día. Se conservó el "
+            "valor original en `isPresent_original` y se calculó "
+            "`asistio` a partir de la asistencia diaria, que es la "
+            "fuente utilizada en el resto del análisis."
+        )
 
-
-        st.markdown("##### Horarios")
-
-        if horas_ingreso_faltantes == 0 and horas_egreso_faltantes == 0:
+        if inconsistencias_asistencia == 0:
 
             st.success(
-                "No se detectaron horarios faltantes."
+                "No se detectaron inconsistencias."
             )
 
         else:
 
             st.warning(
-                f"Horarios faltantes: "
-                f"{horas_ingreso_faltantes} ingresos y "
-                f"{horas_egreso_faltantes} egresos."
+                f"Se encontraron {inconsistencias_asistencia} "
+                f"registros con 'isPresent' distinto de la "
+                f"asistencia derivada."
             )
 
-
-        if egresos_anteriores_ingreso == 0:
-
-            st.success(
-                "No se detectaron egresos anteriores al ingreso."
-            )
-
-        else:
-
-            st.warning(
-                f"Se encontraron {egresos_anteriores_ingreso} "
-                f"registros con egreso anterior al ingreso."
-            )
-
-
-        st.markdown("##### Participaciones duplicadas")
-
-        if participaciones_duplicadas == 0:
-
-            st.success(
-                "No se detectaron participaciones duplicadas."
-            )
-
-        else:
-
-            st.warning(
-                f"Se encontraron {participaciones_duplicadas} "
-                f"posibles participaciones duplicadas."
-            )
-
-
-        st.markdown("##### Capacidad de aulas")
-
-        if capacidades_invalidas == 0:
-
-            st.success(
-                "Todas las capacidades de aula son válidas."
-            )
-
-        else:
-
-            st.warning(
-                f"Se encontraron {capacidades_invalidas} "
-                f"registros con capacidades inválidas."
-            )
-
-
-        st.markdown("##### Estado QR")
-
-        if estados_qr_invalidos == 0:
-
-            st.success(
-                "Todos los estados QR son válidos."
-            )
-
-        else:
-
-            st.warning(
-                f"Se encontraron {estados_qr_invalidos} "
-                f"registros con estados QR inválidos."
+            st.dataframe(
+                df[~mascaras["asistencia_coherente"]][
+                    [
+                        "documento",
+                        "Nombre/s",
+                        "Apellido/s",
+                        "isPresent_original",
+                        "asistio"
+                    ]
+                ],
+                use_container_width=True,
+                hide_index=True
             )
 
 
@@ -473,15 +328,25 @@ def mostrar_calidad_datos(df):
             )
 
 
-        if filas_duplicadas > 0:
+        if documentos_duplicados > 0:
 
             st.divider()
 
             st.markdown(
-                "##### Filas completamente duplicadas"
+                "##### Documentos duplicados"
             )
 
-            st.write(
-                f"Se detectaron {filas_duplicadas} "
-                f"filas completamente duplicadas."
+            st.dataframe(
+                df[~mascaras["documento_unico"]]
+                .sort_values("documento")
+                [
+                    [
+                        "documento",
+                        "Nombre/s",
+                        "Apellido/s",
+                        "mail"
+                    ]
+                ],
+                use_container_width=True,
+                hide_index=True
             )

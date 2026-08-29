@@ -14,11 +14,11 @@ def mostrar_evolucion_historica(df_historico):
         .groupby("anio")
         .agg(
             participaciones=(
-                "id_participante",
+                "documento",
                 "size"
             ),
             participantes_unicos=(
-                "id_participante",
+                "documento",
                 "nunique"
             )
         )

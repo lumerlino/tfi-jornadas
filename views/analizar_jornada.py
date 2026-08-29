@@ -4,10 +4,8 @@ from utils.carga_datos import cargar_datos_demo, cargar_excel_usuario
 from utils.transformaciones import preparar_datos
 from utils.filtros import aplicar_filtros
 from utils.validaciones import validar_columnas
-from utils.guardado_historico import (
-    validar_metadatos_jornada,
-    guardar_carga
-)
+from utils.guardado_historico import validar_metadatos_jornada
+from utils.historico_local import guardar_edicion
 from components.jornada.indicadores import mostrar_indicadores
 from components.jornada.participacion import mostrar_participacion
 from components.jornada.permanencia import mostrar_permanencia
@@ -210,12 +208,75 @@ def mostrar_analizar_jornada():
 
 
     # --------------------------------------------------
-    # PREPARACIÓN DE LOS DATOS
+    # PREPARACIÓN Y LIMPIEZA DE LOS DATOS
     # --------------------------------------------------
 
-    df = preparar_datos(
-        df
+    df, reporte_limpieza_antes, reporte_limpieza_despues = (
+        preparar_datos(
+            df
+        )
     )
+
+    with st.expander(
+        "🧹 Ver reporte de limpieza de datos"
+    ):
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+
+            st.markdown("**Antes de la limpieza**")
+
+            st.write(
+                f"Filas: {reporte_limpieza_antes['filas']}"
+            )
+
+            st.write(
+                f"Duplicados: {reporte_limpieza_antes['duplicados']}"
+            )
+
+            if len(reporte_limpieza_antes["nulos_por_columna"]) > 0:
+
+                st.dataframe(
+                    reporte_limpieza_antes["nulos_por_columna"]
+                    .rename("Valores faltantes"),
+                    use_container_width=True
+                )
+
+            else:
+
+                st.write("Sin valores faltantes.")
+
+        with col2:
+
+            st.markdown("**Después de la limpieza**")
+
+            st.write(
+                f"Filas: {reporte_limpieza_despues['filas']}"
+            )
+
+            st.write(
+                f"Duplicados: {reporte_limpieza_despues['duplicados']}"
+            )
+
+            if len(reporte_limpieza_despues["nulos_por_columna"]) > 0:
+
+                st.dataframe(
+                    reporte_limpieza_despues["nulos_por_columna"]
+                    .rename("Valores faltantes"),
+                    use_container_width=True
+                )
+
+            else:
+
+                st.write("Sin valores faltantes.")
+
+        st.caption(
+            f"Columnas de asistencia detectadas: "
+            f"{', '.join(reporte_limpieza_despues['columnas_asistencia'])}. "
+            f"Inconsistencias entre 'isPresent' y la asistencia por día: "
+            f"{reporte_limpieza_despues['inconsistencias_asistencia']}."
+        )
 
 
     # --------------------------------------------------
@@ -283,18 +344,20 @@ def mostrar_analizar_jornada():
                 use_container_width=True
             ):
 
-                resultado_carga = guardar_carga(
-                    df=df,
-                    metadatos=metadatos_guardados
+                ruta_guardada = guardar_edicion(
+                    df,
+                    metadatos_guardados["anio"],
+                    metadatos_guardados["fecha_inicio"],
+                    metadatos_guardados["fecha_fin"],
+                    es_demo=False
                 )
 
                 st.success(
-                    "Los datos se guardaron correctamente."
+                    "Los datos se guardaron correctamente en el histórico."
                 )
 
                 st.caption(
-                    f"Carga N.º {resultado_carga['numero_carga']} "
-                    f"guardada para la jornada {metadatos_guardados['anio']}."
+                    f"Archivo: {ruta_guardada}"
                 )
 
     st.divider()

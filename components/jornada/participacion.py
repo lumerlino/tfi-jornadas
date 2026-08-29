@@ -1,6 +1,11 @@
 import streamlit as st
 import plotly.express as px
 
+from utils.limpieza_datos import (
+    detectar_columnas_asistencia,
+    construir_asistencia_larga
+)
+
 
 def mostrar_participacion(df):
 
@@ -8,30 +13,18 @@ def mostrar_participacion(df):
 
 
     # --------------------------------------------------
-    # PARTICIPACIÓN POR ACTIVIDAD
-    # --------------------------------------------------
-
-    participacion_actividad = (
-        df
-        .groupby("actividad")
-        .size()
-        .reset_index(name="participaciones")
-        .sort_values(
-            "participaciones",
-            ascending=True
-        )
-    )
-
-
-    # --------------------------------------------------
     # PERFIL DE PARTICIPANTES
     # --------------------------------------------------
 
-    participacion_tipo = (
+    participacion_rol = (
         df
-        .groupby("tipo_participante")
+        .groupby("Rol principal")
         .size()
-        .reset_index(name="participaciones")
+        .reset_index(name="participantes")
+        .sort_values(
+            "participantes",
+            ascending=True
+        )
     )
 
 
@@ -41,90 +34,119 @@ def mostrar_participacion(df):
     with col1:
 
         st.markdown(
-            "#### Actividades con mayor participación"
+            "#### Participantes por rol"
         )
 
-        fig_actividad = px.bar(
-            participacion_actividad,
-            x="participaciones",
-            y="actividad",
+        fig_rol = px.bar(
+            participacion_rol,
+            x="participantes",
+            y="Rol principal",
             orientation="h",
-            text="participaciones"
+            text="participantes"
         )
 
-        fig_actividad.update_layout(
-            xaxis_title="Participaciones",
+        fig_rol.update_layout(
+            xaxis_title="Participantes",
             yaxis_title="",
             showlegend=False
         )
 
         st.plotly_chart(
-            fig_actividad,
+            fig_rol,
             use_container_width=True,
-            key="grafico_participacion_actividad"
+            key="grafico_participacion_rol"
         )
 
 
     with col2:
 
         st.markdown(
-            "#### Perfil de participantes"
+            "#### Miembros UNLa"
         )
 
-        fig_tipo = px.pie(
-            participacion_tipo,
-            names="tipo_participante",
-            values="participaciones",
+        participacion_unla = (
+            df
+            .groupby("Miembro UNLa")
+            .size()
+            .reset_index(name="participantes")
+        )
+
+        fig_unla = px.pie(
+            participacion_unla,
+            names="Miembro UNLa",
+            values="participantes",
             hole=0.45
         )
 
         st.plotly_chart(
-            fig_tipo,
+            fig_unla,
             use_container_width=True,
             key="grafico_perfil_participantes"
         )
 
 
     # --------------------------------------------------
-    # PARTICIPACIÓN POR FECHA
+    # ASISTENCIA POR DÍA
     # --------------------------------------------------
 
-    participacion_fecha = (
-        df
-        .groupby(
-            [
-                "fecha",
-                "fecha_texto"
+    columnas_asistencia = detectar_columnas_asistencia(df)
+
+    if columnas_asistencia:
+
+        asistencia_larga = construir_asistencia_larga(
+            df,
+            columnas_asistencia
+        )
+
+        asistencia_dia = (
+            asistencia_larga[
+                asistencia_larga["asistio"]
             ]
+            .groupby("fecha")
+            .size()
+            .reset_index(name="asistentes")
+            .sort_values("fecha")
         )
-        .size()
-        .reset_index(
-            name="participaciones"
+
+        dia_pico = asistencia_dia.loc[
+            asistencia_dia["asistentes"].idxmax()
+        ]
+
+        st.markdown(
+            "#### Asistencia durante la jornada"
         )
-        .sort_values("fecha")
-    )
 
-    st.markdown(
-        "#### Participación durante la jornada"
-    )
+        st.metric(
+            "Día con mayor concurrencia",
+            dia_pico["fecha"].strftime("%d/%m/%Y"),
+            f"{int(dia_pico['asistentes'])} asistentes"
+        )
 
-    fig_fecha = px.line(
-        participacion_fecha,
-        x="fecha_texto",
-        y="participaciones",
-        markers=True
-    )
+        fig_fecha = px.line(
+            asistencia_dia,
+            x="fecha",
+            y="asistentes",
+            markers=True
+        )
 
-    fig_fecha.update_layout(
-        xaxis_title="Fecha",
-        yaxis_title="Participaciones"
-    )
+        fig_fecha.add_scatter(
+            x=[dia_pico["fecha"]],
+            y=[dia_pico["asistentes"]],
+            mode="markers",
+            marker=dict(size=14, color="red"),
+            name="Día pico"
+        )
 
-    st.plotly_chart(
-        fig_fecha,
-        use_container_width=True,
-        key="grafico_participacion_fecha"
-    )
+        fig_fecha.update_layout(
+            xaxis_title="Fecha",
+            yaxis_title="Asistentes"
+        )
+
+        st.plotly_chart(
+            fig_fecha,
+            use_container_width=True,
+            key="grafico_participacion_fecha"
+        )
 
 
     # --------------------------------------------------
@@ -138,50 +160,40 @@ def mostrar_participacion(df):
     dimension = st.selectbox(
         "Seleccioná una dimensión",
         [
-            "Carrera",
-            "Institución",
-            "Tipo de participante"
+            "Rol principal",
+            "Investigador Carreras",
+            "Tipo inscripción",
+            "Source"
         ],
         key="dimension_participacion"
     )
 
 
-    columnas = {
-        "Carrera": "carrera",
-        "Institución": "institucion",
-        "Tipo de participante": "tipo_participante"
-    }
-
-
-    columna_elegida = columnas[
-        dimension
-    ]
-
-
     participacion_dimension = (
         df
-        .groupby(columna_elegida)
+        .groupby(dimension)
         .size()
         .reset_index(
-            name="participaciones"
+            name="participantes"
         )
         .sort_values(
-            "participaciones",
+            "participantes",
             ascending=False
         )
+        .head(15)
     )
 
 
     fig_dimension = px.bar(
         participacion_dimension,
-        x=columna_elegida,
-        y="participaciones",
-        text="participaciones"
+        x=dimension,
+        y="participantes",
+        text="participantes"
     )
 
     fig_dimension.update_layout(
         xaxis_title="",
-        yaxis_title="Participaciones"
+        yaxis_title="Participantes"
     )
 
     st.plotly_chart(
@@ -202,61 +214,41 @@ def mostrar_participacion(df):
     relacion = st.selectbox(
         "Seleccioná una relación",
         [
-            "Actividad × Carrera",
-            "Actividad × Tipo de participante"
+            "Rol principal × Miembro UNLa",
+            "Rol principal × Tipo inscripción"
         ],
         key="relacion_participacion"
     )
 
 
-    if relacion == "Actividad × Carrera":
+    if relacion == "Rol principal × Miembro UNLa":
 
-        matriz = (
-            df
-            .groupby(
-                [
-                    "actividad",
-                    "carrera"
-                ]
-            )
-            .size()
-            .reset_index(
-                name="participaciones"
-            )
-            .pivot(
-                index="actividad",
-                columns="carrera",
-                values="participaciones"
-            )
-            .fillna(0)
+        columna_cruce = "Miembro UNLa"
+
+    else:
+
+        columna_cruce = "Tipo inscripción"
+
+
+    matriz = (
+        df
+        .groupby(
+            [
+                "Rol principal",
+                columna_cruce
+            ]
         )
-
-        titulo_x = "Carrera"
-
-
-    elif relacion == "Actividad × Tipo de participante":
-
-        matriz = (
-            df
-            .groupby(
-                [
-                    "actividad",
-                    "tipo_participante"
-                ]
-            )
-            .size()
-            .reset_index(
-                name="participaciones"
-            )
-            .pivot(
-                index="actividad",
-                columns="tipo_participante",
-                values="participaciones"
-            )
-            .fillna(0)
+        .size()
+        .reset_index(
+            name="participantes"
         )
-
-        titulo_x = "Tipo de participante"
+        .pivot(
+            index="Rol principal",
+            columns=columna_cruce,
+            values="participantes"
+        )
+        .fillna(0)
+    )
 
 
     fig_matriz = px.imshow(
@@ -264,9 +256,9 @@ def mostrar_participacion(df):
         text_auto=True,
         aspect="auto",
         labels={
-            "x": titulo_x,
-            "y": "Actividad",
-            "color": "Participaciones"
+            "x": columna_cruce,
+            "y": "Rol principal",
+            "color": "Participantes"
         }
     )
 

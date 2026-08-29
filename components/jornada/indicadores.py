@@ -1,23 +1,7 @@
 import streamlit as st
 
-from utils.calidad_datos import obtener_mascaras_calidad
-
 
 def mostrar_indicadores(df):
-
-    mascaras = obtener_mascaras_calidad(df)
-
-    df_personas = df[
-        mascaras["persona_unica"]
-    ]
-
-    df_permanencia = df[
-        mascaras["permanencia"]
-    ]
-
-    df_qr = df[
-        mascaras["qr"]
-    ]
 
 
     # ----------------------------------------------
@@ -25,53 +9,40 @@ def mostrar_indicadores(df):
     # ----------------------------------------------
 
     total_personas = (
-        df_personas["id_participante"]
+        df["documento"]
         .nunique()
     )
 
 
     # ----------------------------------------------
-    # PARTICIPACIONES
+    # INSCRIPCIONES
     # ----------------------------------------------
 
-    total_participaciones = len(df)
+    total_inscripciones = len(df)
 
 
     # ----------------------------------------------
-    # PERMANENCIA
+    # ASISTENCIA
     # ----------------------------------------------
 
-    permanencia_promedio = (
-        df_permanencia[
-            "permanencia_minutos"
-        ]
+    total_asistieron = int(
+        df["asistio"].sum()
+    )
+
+    tasa_asistencia = (
+        total_asistieron
+        / total_inscripciones
+    ) * 100
+
+
+    # ----------------------------------------------
+    # MIEMBROS UNLA
+    # ----------------------------------------------
+
+    porcentaje_unla = (
+        df["Miembro UNLa"]
+        .eq("Si")
         .mean()
-    )
-
-    horas_promedio = int(
-        permanencia_promedio // 60
-    )
-
-    minutos_promedio = int(
-        permanencia_promedio % 60
-    )
-
-
-    # ----------------------------------------------
-    # QR
-    # ----------------------------------------------
-
-    errores_qr = len(
-        df_qr[
-            df_qr["estado_qr"] == "Error"
-        ]
-    )
-
-    total_registros_qr = len(df_qr)
-
-    tasa_error_qr = (
-        errores_qr
-        / total_registros_qr
     ) * 100
 
 
@@ -83,24 +54,24 @@ def mostrar_indicadores(df):
 
     with col1:
         st.metric(
-            "Participantes únicos",
+            "Personas inscriptas",
             total_personas
         )
 
     with col2:
         st.metric(
-            "Participaciones",
-            total_participaciones
+            "Inscripciones",
+            total_inscripciones
         )
 
     with col3:
         st.metric(
-            "Permanencia promedio",
-            f"{horas_promedio} h {minutos_promedio} min"
+            "Tasa de asistencia",
+            f"{tasa_asistencia:.1f}%"
         )
 
     with col4:
         st.metric(
-            "Tasa de error QR",
-            f"{tasa_error_qr:.1f}%"
+            "Miembros UNLa",
+            f"{porcentaje_unla:.1f}%"
         )

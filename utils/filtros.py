@@ -1,58 +1,97 @@
 import streamlit as st
+import pandas as pd
+
+from utils.limpieza_datos import (
+    detectar_columnas_asistencia,
+    construir_asistencia_larga
+)
 
 
 def aplicar_filtros(df):
 
     st.sidebar.subheader("Filtros")
 
-    fecha = st.sidebar.selectbox(
-        "Fecha",
-        ["Todas"] + sorted(
-            df["fecha_texto"].unique().tolist()
-        )
-    )
-
-    actividad = st.sidebar.selectbox(
-        "Actividad",
-        ["Todas"] + sorted(
-            df["actividad"].unique().tolist()
-        )
-    )
-
-    carrera = st.sidebar.selectbox(
-        "Carrera",
-        ["Todas"] + sorted(
-            df["carrera"].unique().tolist()
-        )
-    )
-
-    tipo = st.sidebar.selectbox(
-        "Tipo de participante",
+    rol = st.sidebar.selectbox(
+        "Rol principal",
         ["Todos"] + sorted(
-            df["tipo_participante"].unique().tolist()
+            df["Rol principal"].dropna().unique().tolist()
         )
     )
+
+    miembro_unla = st.sidebar.selectbox(
+        "Miembro UNLa",
+        ["Todos"] + sorted(
+            df["Miembro UNLa"].dropna().unique().tolist()
+        )
+    )
+
+    tipo_inscripcion = st.sidebar.selectbox(
+        "Tipo de inscripción",
+        ["Todos"] + sorted(
+            df["Tipo inscripción"].dropna().unique().tolist()
+        )
+    )
+
+    source = st.sidebar.selectbox(
+        "Origen de inscripción",
+        ["Todos"] + sorted(
+            df["Source"].dropna().unique().tolist()
+        )
+    )
+
+    columnas_asistencia = detectar_columnas_asistencia(df)
+
+    fechas_disponibles = sorted(
+        columna.replace("Asistencia ", "")
+        for columna in columnas_asistencia
+    )
+
+    fecha = st.sidebar.selectbox(
+        "Asistió el día",
+        ["Cualquiera"] + fechas_disponibles
+    )
+
 
     df_filtrado = df.copy()
 
-    if fecha != "Todas":
+    if rol != "Todos":
         df_filtrado = df_filtrado[
-            df_filtrado["fecha_texto"] == fecha
+            df_filtrado["Rol principal"] == rol
         ]
 
-    if actividad != "Todas":
+    if miembro_unla != "Todos":
         df_filtrado = df_filtrado[
-            df_filtrado["actividad"] == actividad
+            df_filtrado["Miembro UNLa"] == miembro_unla
         ]
 
-    if carrera != "Todas":
+    if tipo_inscripcion != "Todos":
         df_filtrado = df_filtrado[
-            df_filtrado["carrera"] == carrera
+            df_filtrado["Tipo inscripción"] == tipo_inscripcion
         ]
 
-    if tipo != "Todos":
+    if source != "Todos":
         df_filtrado = df_filtrado[
-            df_filtrado["tipo_participante"] == tipo
+            df_filtrado["Source"] == source
+        ]
+
+    if fecha != "Cualquiera":
+
+        asistencia_larga = construir_asistencia_larga(
+            df_filtrado,
+            columnas_asistencia
+        )
+
+        documentos_presentes = (
+            asistencia_larga[
+                (asistencia_larga["fecha"] == pd.to_datetime(fecha))
+                & (asistencia_larga["asistio"])
+            ]
+            ["documento"]
+            .unique()
+        )
+
+        df_filtrado = df_filtrado[
+            df_filtrado["documento"].isin(documentos_presentes)
         ]
 
     if len(df_filtrado) == 0:

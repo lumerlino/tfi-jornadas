@@ -1,41 +1,46 @@
 def obtener_mascaras_calidad(df):
 
-    estados_qr_validos = [
-        "Correcto",
-        "Error"
+    documento_valido = (
+        df["documento"].notna()
+        & (df["documento"].astype(str).str.strip() != "")
+        & (df["documento"].astype(str).str.strip() != "nan")
+    )
+
+    documento_unico = (
+        ~df["documento"].duplicated(keep=False)
+    )
+
+    mail_valido = (
+        df["mail"].notna()
+        & df["mail"].astype(str).str.contains(
+            r"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+            regex=True,
+            na=False
+        )
+    )
+
+    columnas_obligatorias = [
+        "Nombre/s",
+        "Apellido/s",
+        "documento",
+        "mail",
+        "Rol principal"
     ]
 
-    valido_participacion = (
-        df["actividad"].notna()
-        & df["fecha"].notna()
+    datos_completos = (
+        df[columnas_obligatorias]
+        .notna()
+        .all(axis=1)
     )
 
-    valido_persona_unica = (
-        valido_participacion
-        & df["id_participante"].notna()
-    )
-
-    valido_permanencia = (
-        valido_participacion
-        & df["hora_ingreso"].notna()
-        & df["hora_egreso"].notna()
-        & (df["hora_egreso"] >= df["hora_ingreso"])
-    )
-
-    valido_qr = (
-        df["estado_qr"].isin(estados_qr_validos)
-    )
-
-    valido_ocupacion = (
-        valido_participacion
-        & df["capacidad_aula"].notna()
-        & (df["capacidad_aula"] > 0)
+    asistencia_coherente = (
+        df["isPresent_original"] == df["asistio"]
     )
 
     return {
-        "participacion": valido_participacion,
-        "persona_unica": valido_persona_unica,
-        "permanencia": valido_permanencia,
-        "qr": valido_qr,
-        "ocupacion": valido_ocupacion
+        "documento_valido": documento_valido,
+        "documento_unico": documento_unico,
+        "mail_valido": mail_valido,
+        "datos_completos": datos_completos,
+        "asistencia_coherente": asistencia_coherente
     }

@@ -1,22 +1,19 @@
+from utils.limpieza_datos import detectar_columnas_asistencia
+
+
 COLUMNAS_OBLIGATORIAS = [
-    "id_participante",
-    "tipo_participante",
-    "carrera",
-    "institucion",
-    "fecha",
-    "actividad",
-    "tipo_actividad",
-    "tematica",
-    "aula",
-    "capacidad_aula",
-    "hora_inicio_actividad",
-    "hora_fin_actividad",
-    "hora_ingreso",
-    "hora_egreso",
-    "inscripto",
-    "asistio",
-    "estado_qr",
-    "punto_acceso"
+    "Nombre/s",
+    "Apellido/s",
+    "documento",
+    "mail",
+    "Miembro UNLa",
+    "Rol principal",
+    "Tipo inscripción",
+    "Source",
+    "IsWelcomeMailSent",
+    "QRCode",
+    "isPresent",
+    "IsAssistanceCertifySent"
 ]
 
 def validar_columnas(df):
@@ -26,5 +23,11 @@ def validar_columnas(df):
         for columna in COLUMNAS_OBLIGATORIAS
         if columna not in df.columns
     ]
+
+    if not detectar_columnas_asistencia(df):
+
+        columnas_faltantes.append(
+            "Asistencia YYYY-MM-DD (al menos un día)"
+        )
 
     return columnas_faltantes

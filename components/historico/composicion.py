@@ -12,18 +12,18 @@ def mostrar_composicion_historica(df_historico):
     dimension = st.selectbox(
         "Analizar evolución por",
         [
-            "Carrera",
-            "Tipo de participante",
-            "Institución"
+            "Investigador Carreras",
+            "Rol principal",
+            "Miembro UNLa"
         ],
         key="dimension_historica"
     )
 
 
     columnas = {
-        "Carrera": "carrera",
-        "Tipo de participante": "tipo_participante",
-        "Institución": "institucion"
+        "Investigador Carreras": "Investigador Carreras",
+        "Rol principal": "Rol principal",
+        "Miembro UNLa": "Miembro UNLa"
     }
 
 
@@ -40,7 +40,7 @@ def mostrar_composicion_historica(df_historico):
         df_historico
         .dropna(
             subset=[
-                "id_participante",
+                "documento",
                 columna
             ]
         )
@@ -52,7 +52,7 @@ def mostrar_composicion_historica(df_historico):
         )
         .agg(
             participantes=(
-                "id_participante",
+                "documento",
                 "nunique"
             )
         )
