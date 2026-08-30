@@ -4,6 +4,7 @@ from views.inicio import mostrar_inicio
 from views.analizar_jornada import mostrar_analizar_jornada
 from views.historico import mostrar_historico
 from views.configuracion_columnas import mostrar_configuracion_columnas
+from views.gestion_cargas import mostrar_gestion_cargas
 
 
 st.set_page_config(
@@ -21,7 +22,8 @@ opciones = [
     "🏠 Inicio",
     "📤 Analizar jornada",
     "📊 Histórico",
-    "⚙️ Configuración"
+    "⚙️ Configuración",
+    "🗑️ Gestionar cargas"
 ]
 
 
@@ -94,3 +96,8 @@ elif pagina == "📊 Histórico":
 elif pagina == "⚙️ Configuración":
 
     mostrar_configuracion_columnas()
+
+
+elif pagina == "🗑️ Gestionar cargas":
+
+    mostrar_gestion_cargas()
