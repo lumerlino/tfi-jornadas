@@ -1,6 +1,16 @@
 import pandas as pd
 
 from utils.supabase_cliente import obtener_cliente_supabase
+from utils.guardado_historico import COLUMNAS_PARTICIPACIONES
+
+
+# Inverso de COLUMNAS_PARTICIPACIONES: de columna de la tabla
+# (snake_case) al nombre "de display" que usan los componentes
+# de jornada/histórico (ej. "rol_principal" -> "Rol principal").
+COLUMNAS_PARTICIPACIONES_INVERSO = {
+    columna_destino: columna_origen
+    for columna_origen, columna_destino in COLUMNAS_PARTICIPACIONES.items()
+}
 
 
 def obtener_ultima_carga_por_jornada():
@@ -10,13 +20,8 @@ def obtener_ultima_carga_por_jornada():
     respuesta = (
         supabase
         .table("cargas")
-        .select(
-            "id, jornada_id, numero_carga, fecha_carga"
-        )
-        .order(
-            "numero_carga",
-            desc=True
-        )
+        .select("id, jornada_id, numero_carga, fecha_carga")
+        .order("numero_carga", desc=True)
         .execute()
     )
 
@@ -34,10 +39,7 @@ def obtener_ultima_carga_por_jornada():
     return ultimas_cargas
 
 
-def cargar_participaciones_carga(
-    carga_id,
-    tamanio_pagina=1000
-):
+def cargar_registros(tabla, carga_id, tamanio_pagina=1000):
 
     supabase = obtener_cliente_supabase()
 
@@ -47,24 +49,14 @@ def cargar_participaciones_carga(
 
     while True:
 
-        fin = (
-            inicio
-            + tamanio_pagina
-            - 1
-        )
+        fin = inicio + tamanio_pagina - 1
 
         respuesta = (
             supabase
-            .table("participaciones")
+            .table(tabla)
             .select("*")
-            .eq(
-                "carga_id",
-                carga_id
-            )
-            .range(
-                inicio,
-                fin
-            )
+            .eq("carga_id", carga_id)
+            .range(inicio, fin)
             .execute()
         )
 
@@ -73,9 +65,7 @@ def cargar_participaciones_carga(
         if not pagina:
             break
 
-        registros.extend(
-            pagina
-        )
+        registros.extend(pagina)
 
         if len(pagina) < tamanio_pagina:
             break
@@ -85,23 +75,41 @@ def cargar_participaciones_carga(
     return registros
 
 
+def construir_df_participaciones(registros_participaciones, jornada, carga):
+
+    if not registros_participaciones:
+        return pd.DataFrame()
+
+    df = pd.DataFrame(registros_participaciones)
+
+    columnas_a_renombrar = {
+        columna_db: columna_display
+        for columna_db, columna_display in COLUMNAS_PARTICIPACIONES_INVERSO.items()
+        if columna_db in df.columns
+    }
+
+    df = df.rename(columns=columnas_a_renombrar)
+
+    df = df.drop(columns=["id", "carga_id"], errors="ignore")
+
+    df["anio"] = jornada["anio"]
+    df["fecha_inicio_jornada"] = jornada["fecha_inicio"]
+    df["fecha_fin_jornada"] = jornada["fecha_fin"]
+    df["numero_carga"] = carga["numero_carga"]
+    df["fecha_carga"] = carga["fecha_carga"]
+
+    return df
+
+
 def cargar_historico():
 
     supabase = obtener_cliente_supabase()
 
-    # --------------------------------------------------
-    # JORNADAS
-    # --------------------------------------------------
-
     respuesta_jornadas = (
         supabase
         .table("jornadas")
-        .select(
-            "id, anio, fecha_inicio, fecha_fin"
-        )
-        .order(
-            "anio"
-        )
+        .select("id, anio, fecha_inicio, fecha_fin")
+        .order("anio")
         .execute()
     )
 
@@ -110,98 +118,34 @@ def cargar_historico():
     if not jornadas:
         return pd.DataFrame()
 
-
-    # --------------------------------------------------
-    # ÚLTIMA CARGA DE CADA JORNADA
-    # --------------------------------------------------
-
-    ultimas_cargas = (
-        obtener_ultima_carga_por_jornada()
-    )
-
+    ultimas_cargas = obtener_ultima_carga_por_jornada()
 
     dataframes = []
 
-
-    # --------------------------------------------------
-    # PARTICIPACIONES
-    # --------------------------------------------------
-
     for jornada in jornadas:
 
-        jornada_id = jornada["id"]
-
-        carga = ultimas_cargas.get(
-            jornada_id
-        )
+        carga = ultimas_cargas.get(jornada["id"])
 
         if carga is None:
             continue
 
-
-        participaciones = (
-            cargar_participaciones_carga(
-                carga["id"]
-            )
+        registros_participaciones = cargar_registros(
+            "participaciones",
+            carga["id"]
         )
 
+        df = construir_df_participaciones(
+            registros_participaciones,
+            jornada,
+            carga
+        )
 
-        if not participaciones:
+        if df.empty:
             continue
 
-
-        df = pd.DataFrame(
-            participaciones
-        )
-
-
-        # --------------------------------------------------
-        # DATOS DE LA JORNADA
-        # --------------------------------------------------
-
-        df["anio"] = jornada[
-            "anio"
-        ]
-
-        df["fecha_inicio_jornada"] = (
-            jornada[
-                "fecha_inicio"
-            ]
-        )
-
-        df["fecha_fin_jornada"] = (
-            jornada[
-                "fecha_fin"
-            ]
-        )
-
-
-        # --------------------------------------------------
-        # DATOS DE LA CARGA
-        # --------------------------------------------------
-
-        df["numero_carga"] = carga[
-            "numero_carga"
-        ]
-
-        df["fecha_carga"] = carga[
-            "fecha_carga"
-        ]
-
-
-        dataframes.append(
-            df
-        )
-
+        dataframes.append(df)
 
     if not dataframes:
         return pd.DataFrame()
 
-
-    df_historico = pd.concat(
-        dataframes,
-        ignore_index=True
-    )
-
-
-    return df_historico
+    return pd.concat(dataframes, ignore_index=True)

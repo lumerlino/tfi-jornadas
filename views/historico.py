@@ -1,6 +1,6 @@
 import streamlit as st
 
-from utils.historico_local import cargar_historico
+from utils.historico_datos import cargar_historico
 
 from components.historico.indicadores import mostrar_indicadores_historicos
 from components.historico.evolucion import mostrar_evolucion_historica
@@ -15,23 +15,26 @@ def mostrar_historico():
 
     st.title("Histórico de Jornadas")
 
-    df_historico = cargar_historico()
+    try:
+
+        df_historico = cargar_historico()
+
+    except Exception as error:
+
+        st.error(
+            "No se pudo conectar con la base de datos del histórico. "
+            "Probá de nuevo en unos minutos; si el problema persiste, "
+            "puede ser un tema de configuración o de conexión."
+        )
+
+        with st.expander("Detalle técnico"):
+            st.write(f"{type(error).__name__}: {error}")
+
+        return
 
     if df_historico.empty:
         st.info("Todavía no hay jornadas guardadas en el histórico.")
         return
-
-    if df_historico["es_demo"].any():
-
-        anios_demo = sorted(
-            df_historico[df_historico["es_demo"]]["anio"].unique().tolist()
-        )
-
-        st.warning(
-            f"Los datos de {', '.join(str(a) for a in anios_demo)} son de "
-            f"demostración (no son ediciones reales). Los análisis que los "
-            f"incluyen no deben interpretarse como resultados reales."
-        )
 
     tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
         [
