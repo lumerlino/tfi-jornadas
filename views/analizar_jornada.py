@@ -400,6 +400,29 @@ def mostrar_analizar_jornada():
 
 
     # --------------------------------------------------
+    # VISTA DE ANÁLISIS: solo columnas oficiales + asistencia
+    # + configuradas. El "df" completo (con todo lo que trajo
+    # el Excel) se sigue usando para guardar en Supabase más
+    # abajo, así "datos_extra" no pierde nada — esto solo
+    # recorta lo que se filtra/grafica/muestra en pantalla.
+    # --------------------------------------------------
+
+    columnas_a_mantener = (
+        set(COLUMNAS_PARTICIPACIONES.keys())
+        | set(reporte_limpieza_despues["columnas_asistencia"])
+        | set(configuraciones.keys())
+    )
+
+    df_vista = df[
+        [
+            columna
+            for columna in df.columns
+            if columna in columnas_a_mantener
+        ]
+    ]
+
+
+    # --------------------------------------------------
     # RESUMEN DE LOS DATOS GENERALES
     # --------------------------------------------------
 
@@ -496,7 +519,7 @@ def mostrar_analizar_jornada():
     # --------------------------------------------------
 
     df_filtrado = aplicar_filtros(
-        df,
+        df_vista,
         configuraciones
     )
 
@@ -561,7 +584,7 @@ def mostrar_analizar_jornada():
     with tab5:
 
         mostrar_calidad_datos(
-            df
+            df_vista
         )
 
 

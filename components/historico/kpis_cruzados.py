@@ -5,24 +5,18 @@ def mostrar_kpis_cruzados(df_historico):
 
     st.markdown("### KPIs cruzados: repetición entre ediciones")
 
-    df_real = df_historico[~df_historico["es_demo"]]
+    df_real = df_historico
 
     anios_reales = sorted(df_real["anio"].unique().tolist())
 
     if len(anios_reales) < 2:
 
         st.info(
-            "Se necesitan al menos 2 ediciones reales (no de "
-            "demostración) para calcular una tasa de repetición real. "
-            f"Hoy hay {len(anios_reales)}."
+            "Se necesitan al menos 2 ediciones cargadas para calcular "
+            f"una tasa de repetición real. Hoy hay {len(anios_reales)}."
         )
 
         return
-
-    st.caption(
-        "Se excluyen ediciones de demostración: esta métrica solo "
-        "usa asistencia real entre ediciones consecutivas."
-    )
 
     for anio_anterior, anio_siguiente in zip(
         anios_reales[:-1],
