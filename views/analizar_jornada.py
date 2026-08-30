@@ -18,7 +18,8 @@ from utils.clasificacion_columnas import (
 )
 from utils.configuracion_columnas import (
     obtener_configuraciones,
-    guardar_configuracion
+    guardar_configuracion,
+    CONFIGURACION_POR_DEFECTO
 )
 from components.jornada.indicadores import mostrar_indicadores
 from components.jornada.participacion import mostrar_participacion
@@ -325,13 +326,14 @@ def mostrar_analizar_jornada():
 
     except Exception:
 
-        configuraciones = {}
+        configuraciones = CONFIGURACION_POR_DEFECTO
 
         st.warning(
-            "No se pudo cargar la configuración de columnas "
-            "personalizadas (sin conexión a la base). El análisis "
-            "sigue funcionando, pero sin filtros/gráficos dinámicos "
-            "de columnas nuevas por ahora."
+            "No se pudo conectar con la base de configuración de "
+            "columnas. Se están usando los filtros por default — si "
+            "personalizaste algo en ⚙️ Configuración, esos cambios no "
+            "se van a reflejar hasta que vuelva la conexión. Tampoco "
+            "van a aparecer columnas nuevas para configurar por ahora."
         )
 
     columnas_nuevas = columnas_no_mapeadas(
@@ -548,7 +550,7 @@ def mostrar_analizar_jornada():
             "📱 Registro QR",
             "🔎 Calidad de datos",
             "📋 Datos",
-            "🆕 Explorar"
+            "📈 Explorar"
         ]
     )
 

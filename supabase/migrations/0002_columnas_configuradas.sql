@@ -11,3 +11,13 @@ create table if not exists columnas_configuradas (
     metrica text not null,
     creado_en timestamptz not null default now()
 );
+
+-- Seed
+insert into columnas_configuradas
+    (columna_excel, nombre_display, tipo_dato, metrica)
+values
+    ('Rol principal', 'Rol principal', 'categorica', 'Barras'),
+    ('Miembro UNLa', 'Miembro UNLa', 'booleana', 'Tasa (%)'),
+    ('Tipo inscripción', 'Tipo de inscripción', 'categorica', 'Barras'),
+    ('Source', 'Origen de inscripción', 'categorica', 'Barras')
+on conflict (columna_excel) do nothing;

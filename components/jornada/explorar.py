@@ -2,9 +2,115 @@ import streamlit as st
 import plotly.express as px
 
 
+def renderizar_metrica(valores, nombre_display, metrica, key_prefix="explorar"):
+
+    if metrica == "Barras":
+
+        conteo = (
+            valores
+            .value_counts()
+            .reset_index()
+        )
+
+        conteo.columns = [nombre_display, "cantidad"]
+
+        fig = px.bar(
+            conteo,
+            x=nombre_display,
+            y="cantidad",
+            text="cantidad"
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            key=f"{key_prefix}_barras_{nombre_display}"
+        )
+
+    elif metrica == "Torta":
+
+        conteo = (
+            valores
+            .value_counts()
+            .reset_index()
+        )
+
+        conteo.columns = [nombre_display, "cantidad"]
+
+        fig = px.pie(
+            conteo,
+            names=nombre_display,
+            values="cantidad",
+            hole=0.45
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            key=f"{key_prefix}_torta_{nombre_display}"
+        )
+
+    elif metrica == "Histograma":
+
+        fig = px.histogram(
+            valores.to_frame(name=nombre_display),
+            x=nombre_display
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            key=f"{key_prefix}_histograma_{nombre_display}"
+        )
+
+    elif metrica == "Resumen estadístico":
+
+        st.dataframe(
+            valores.describe().to_frame(),
+            use_container_width=True
+        )
+
+    elif metrica == "Tasa (%)":
+
+        tasa = valores.mean() * 100
+
+        st.metric(
+            f"{nombre_display} (Sí)",
+            f"{tasa:.1f}%"
+        )
+
+    elif metrica == "Evolución temporal":
+
+        conteo = (
+            valores
+            .to_frame(name=nombre_display)
+            .groupby(nombre_display)
+            .size()
+            .reset_index(name="cantidad")
+            .sort_values(nombre_display)
+        )
+
+        fig = px.line(
+            conteo,
+            x=nombre_display,
+            y="cantidad",
+            markers=True
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            key=f"{key_prefix}_evolucion_{nombre_display}"
+        )
+
+    else:
+
+        st.info(f"Métrica '{metrica}' sin gráfico asociado.")
+
+
 def mostrar_explorar(df, configuraciones):
 
-    st.subheader("Explorar columnas nuevas")
+    st.subheader("Explorar columnas configuradas")
 
     columnas_activas = [
         (columna, configuracion)
@@ -16,10 +122,10 @@ def mostrar_explorar(df, configuraciones):
     if not columnas_activas:
 
         st.info(
-            "Todavía no hay columnas nuevas configuradas con un "
-            "gráfico activo. Si el Excel trae un campo que la app "
-            "no reconoce, va a aparecer arriba del análisis para "
-            "que elijas qué mostrar acá."
+            "No hay ninguna columna configurada con un gráfico "
+            "activo todavía (ni de las oficiales ni de las nuevas). "
+            "Se configuran desde 'Columnas nuevas detectadas' más "
+            "arriba, o se editan en la página ⚙️ Configuración."
         )
 
         return
@@ -32,102 +138,11 @@ def mostrar_explorar(df, configuraciones):
 
         st.markdown(f"#### {nombre_display}")
 
-        if metrica == "Barras":
-
-            conteo = (
-                df[columna]
-                .value_counts()
-                .reset_index()
-            )
-
-            conteo.columns = [nombre_display, "cantidad"]
-
-            fig = px.bar(
-                conteo,
-                x=nombre_display,
-                y="cantidad",
-                text="cantidad"
-            )
-
-            st.plotly_chart(
-                fig,
-                use_container_width=True,
-                key=f"grafico_explorar_barras_{columna}"
-            )
-
-        elif metrica == "Torta":
-
-            conteo = (
-                df[columna]
-                .value_counts()
-                .reset_index()
-            )
-
-            conteo.columns = [nombre_display, "cantidad"]
-
-            fig = px.pie(
-                conteo,
-                names=nombre_display,
-                values="cantidad",
-                hole=0.45
-            )
-
-            st.plotly_chart(
-                fig,
-                use_container_width=True,
-                key=f"grafico_explorar_torta_{columna}"
-            )
-
-        elif metrica == "Histograma":
-
-            fig = px.histogram(
-                df,
-                x=columna
-            )
-
-            st.plotly_chart(
-                fig,
-                use_container_width=True,
-                key=f"grafico_explorar_histograma_{columna}"
-            )
-
-        elif metrica == "Resumen estadístico":
-
-            st.dataframe(
-                df[columna].describe().to_frame(),
-                use_container_width=True
-            )
-
-        elif metrica == "Tasa (%)":
-
-            tasa = df[columna].mean() * 100
-
-            st.metric(
-                f"{nombre_display} (Sí)",
-                f"{tasa:.1f}%"
-            )
-
-        elif metrica == "Evolución temporal":
-
-            conteo = (
-                df
-                .groupby(columna)
-                .size()
-                .reset_index(name="cantidad")
-                .sort_values(columna)
-            )
-
-            fig = px.line(
-                conteo,
-                x=columna,
-                y="cantidad",
-                markers=True
-            )
-
-            st.plotly_chart(
-                fig,
-                use_container_width=True,
-                key=f"grafico_explorar_evolucion_{columna}"
-            )
+        renderizar_metrica(
+            df[columna],
+            nombre_display,
+            metrica,
+            key_prefix="explorar"
+        )
 
         st.divider()
