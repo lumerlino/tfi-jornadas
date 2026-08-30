@@ -9,61 +9,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 CARPETA_JORNADAS = BASE_DIR / "data" / "jornadas"
 
 
-def _carpeta_cargas(anio):
-
-    return CARPETA_JORNADAS / str(anio) / "cargas"
-
-
-def obtener_proximo_numero_carga(carpeta_cargas):
-
-    archivos = list(carpeta_cargas.glob("carga_*.xlsx"))
-
-    numeros = []
-
-    for archivo in archivos:
-
-        try:
-            numeros.append(int(archivo.stem.split("_")[-1]))
-        except ValueError:
-            continue
-
-    if not numeros:
-        return 1
-
-    return max(numeros) + 1
-
-
-def guardar_edicion(df_limpio, anio, fecha_inicio, fecha_fin, es_demo=False):
-
-    carpeta_jornada = CARPETA_JORNADAS / str(anio)
-    carpeta_cargas = _carpeta_cargas(anio)
-
-    carpeta_cargas.mkdir(parents=True, exist_ok=True)
-
-    metadata = {
-        "anio": anio,
-        "fecha_inicio": str(fecha_inicio),
-        "fecha_fin": str(fecha_fin),
-        "es_demo": es_demo
-    }
-
-    with open(
-        carpeta_jornada / "metadata.json",
-        "w",
-        encoding="utf-8"
-    ) as archivo:
-
-        json.dump(metadata, archivo, ensure_ascii=False, indent=4)
-
-    numero_carga = obtener_proximo_numero_carga(carpeta_cargas)
-
-    ruta_excel = carpeta_cargas / f"carga_{numero_carga:03d}.xlsx"
-
-    df_limpio.to_excel(ruta_excel, index=False)
-
-    return ruta_excel
-
-
 def cargar_historico():
 
     if not CARPETA_JORNADAS.exists():

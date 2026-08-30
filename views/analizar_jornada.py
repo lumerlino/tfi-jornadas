@@ -1,11 +1,12 @@
+import os
+
 import streamlit as st
 
 from utils.carga_datos import cargar_datos_demo, cargar_excel_usuario
 from utils.transformaciones import preparar_datos
 from utils.filtros import aplicar_filtros
 from utils.validaciones import validar_columnas
-from utils.guardado_historico import validar_metadatos_jornada
-from utils.historico_local import guardar_edicion
+from utils.guardado_historico import validar_metadatos_jornada, guardar_carga
 from components.jornada.indicadores import mostrar_indicadores
 from components.jornada.participacion import mostrar_participacion
 from components.jornada.permanencia import mostrar_permanencia
@@ -20,10 +21,23 @@ def mostrar_analizar_jornada():
 
     st.title("Analizar jornada")
 
-    st.write(
-        "Podés cargar un archivo Excel con los datos de una jornada "
-        "o utilizar los datos de demostración."
+    demo_habilitado = (
+        os.getenv("HABILITAR_DEMO", "false").lower() == "true"
     )
+
+    if demo_habilitado:
+
+        st.write(
+            "Podés cargar un archivo Excel con los datos de una jornada "
+            "o utilizar los datos de demostración."
+        )
+
+    else:
+
+        st.write(
+            "Cargá un archivo Excel con los datos de una jornada "
+            "para comenzar el análisis."
+        )
 
 
     # --------------------------------------------------
@@ -44,14 +58,22 @@ def mostrar_analizar_jornada():
     # SELECCIÓN DEL ORIGEN DE DATOS
     # --------------------------------------------------
 
-    opcion = st.radio(
-        "¿Cómo querés comenzar?",
-        [
-            "📤 Cargar archivo Excel",
-            "🧪 Usar datos de demostración"
-        ],
-        horizontal=True
-    )
+    opciones_origen = ["📤 Cargar archivo Excel"]
+
+    if demo_habilitado:
+        opciones_origen.append("🧪 Usar datos de demostración")
+
+    if len(opciones_origen) > 1:
+
+        opcion = st.radio(
+            "¿Cómo querés comenzar?",
+            opciones_origen,
+            horizontal=True
+        )
+
+    else:
+
+        opcion = opciones_origen[0]
 
 
     df = None
@@ -344,12 +366,9 @@ def mostrar_analizar_jornada():
                 use_container_width=True
             ):
 
-                ruta_guardada = guardar_edicion(
-                    df,
-                    metadatos_guardados["anio"],
-                    metadatos_guardados["fecha_inicio"],
-                    metadatos_guardados["fecha_fin"],
-                    es_demo=False
+                resultado_carga = guardar_carga(
+                    df=df,
+                    metadatos=metadatos_guardados
                 )
 
                 st.success(
@@ -357,7 +376,8 @@ def mostrar_analizar_jornada():
                 )
 
                 st.caption(
-                    f"Archivo: {ruta_guardada}"
+                    f"Carga N.º {resultado_carga['numero_carga']} "
+                    f"guardada para la jornada {metadatos_guardados['anio']}."
                 )
 
     st.divider()
