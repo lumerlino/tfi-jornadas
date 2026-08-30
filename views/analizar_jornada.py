@@ -6,7 +6,20 @@ from utils.carga_datos import cargar_datos_demo, cargar_excel_usuario
 from utils.transformaciones import preparar_datos
 from utils.filtros import aplicar_filtros
 from utils.validaciones import validar_columnas
-from utils.guardado_historico import validar_metadatos_jornada, guardar_carga
+from utils.guardado_historico import (
+    validar_metadatos_jornada,
+    guardar_carga,
+    COLUMNAS_PARTICIPACIONES
+)
+from utils.clasificacion_columnas import (
+    clasificar_columna,
+    columnas_no_mapeadas,
+    METRICAS_POR_TIPO
+)
+from utils.configuracion_columnas import (
+    obtener_configuraciones,
+    guardar_configuracion
+)
 from components.jornada.indicadores import mostrar_indicadores
 from components.jornada.participacion import mostrar_participacion
 from components.jornada.permanencia import mostrar_permanencia
@@ -15,6 +28,7 @@ from components.jornada.tabla_datos import mostrar_datos
 from components.jornada.ocupacion import mostrar_ocupacion
 from components.jornada.calidad_datos import mostrar_calidad_datos
 from components.jornada.metadatos import mostrar_metadatos_jornada
+from components.jornada.explorar import mostrar_explorar
 
 
 def mostrar_analizar_jornada():
@@ -302,6 +316,90 @@ def mostrar_analizar_jornada():
 
 
     # --------------------------------------------------
+    # COLUMNAS NUEVAS: detectar, clasificar y preguntar
+    # --------------------------------------------------
+
+    try:
+
+        configuraciones = obtener_configuraciones()
+
+    except Exception:
+
+        configuraciones = {}
+
+        st.warning(
+            "No se pudo cargar la configuración de columnas "
+            "personalizadas (sin conexión a la base). El análisis "
+            "sigue funcionando, pero sin filtros/gráficos dinámicos "
+            "de columnas nuevas por ahora."
+        )
+
+    columnas_nuevas = columnas_no_mapeadas(
+        df,
+        COLUMNAS_PARTICIPACIONES.keys()
+    )
+
+    pendientes = [
+        columna
+        for columna in columnas_nuevas
+        if columna not in configuraciones
+    ]
+
+    if pendientes:
+
+        st.markdown("### 🆕 Columnas nuevas detectadas")
+
+        st.write(
+            "Estas columnas del Excel no están contempladas todavía. "
+            "No se pierden (quedan guardadas igual), pero para que "
+            "aparezcan como filtro o gráfico hay que configurarlas."
+        )
+
+        for columna in pendientes:
+
+            tipo = clasificar_columna(df[columna])
+
+            with st.expander(f"{columna} (tipo detectado: {tipo})"):
+
+                if tipo in ("identificador", "texto_libre"):
+
+                    st.info(
+                        "Esta columna no se ofrece como filtro ni "
+                        "gráfico: tiene muchos valores distintos "
+                        "(puede ser un identificador o texto libre), "
+                        "y por privacidad no se expone en la app."
+                    )
+
+                else:
+
+                    nombre_display = st.text_input(
+                        "Nombre a mostrar",
+                        value=columna,
+                        key=f"nombre_{columna}"
+                    )
+
+                    metrica = st.selectbox(
+                        "¿Qué querés ver de esta columna?",
+                        METRICAS_POR_TIPO[tipo],
+                        key=f"metrica_{columna}"
+                    )
+
+                    if st.button(
+                        "Guardar configuración",
+                        key=f"guardar_config_{columna}"
+                    ):
+
+                        guardar_configuracion(
+                            columna,
+                            nombre_display,
+                            tipo,
+                            metrica
+                        )
+
+                        st.rerun()
+
+
+    # --------------------------------------------------
     # RESUMEN DE LOS DATOS GENERALES
     # --------------------------------------------------
 
@@ -398,7 +496,8 @@ def mostrar_analizar_jornada():
     # --------------------------------------------------
 
     df_filtrado = aplicar_filtros(
-        df
+        df,
+        configuraciones
     )
 
 
@@ -418,14 +517,15 @@ def mostrar_analizar_jornada():
     # PESTAÑAS DEL DASHBOARD
     # --------------------------------------------------
 
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
         [
             "👥 Participación",
             "⏱ Permanencia",
             "🏫 Ocupación",
             "📱 Registro QR",
             "🔎 Calidad de datos",
-            "📋 Datos"
+            "📋 Datos",
+            "🆕 Explorar"
         ]
     )
 
@@ -469,4 +569,12 @@ def mostrar_analizar_jornada():
 
         mostrar_datos(
             df_filtrado
+        )
+
+
+    with tab7:
+
+        mostrar_explorar(
+            df_filtrado,
+            configuraciones
         )

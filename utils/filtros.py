@@ -7,7 +7,10 @@ from utils.limpieza_datos import (
 )
 
 
-def aplicar_filtros(df):
+def aplicar_filtros(df, configuraciones=None):
+
+    if configuraciones is None:
+        configuraciones = {}
 
     st.sidebar.subheader("Filtros")
 
@@ -52,6 +55,32 @@ def aplicar_filtros(df):
     )
 
 
+    # --------------------------------------------------
+    # FILTROS DINÁMICOS (columnas nuevas configuradas por
+    # el usuario, ver utils/configuracion_columnas.py)
+    # --------------------------------------------------
+
+    filtros_dinamicos = {}
+
+    for columna, configuracion in configuraciones.items():
+
+        if columna not in df.columns:
+            continue
+
+        if configuracion["tipo_dato"] not in ("categorica", "booleana"):
+            continue
+
+        valor_elegido = st.sidebar.selectbox(
+            configuracion["nombre_display"],
+            ["Todos"] + sorted(
+                df[columna].dropna().unique().tolist(),
+                key=str
+            )
+        )
+
+        filtros_dinamicos[columna] = valor_elegido
+
+
     df_filtrado = df.copy()
 
     if rol != "Todos":
@@ -73,6 +102,13 @@ def aplicar_filtros(df):
         df_filtrado = df_filtrado[
             df_filtrado["Source"] == source
         ]
+
+    for columna, valor_elegido in filtros_dinamicos.items():
+
+        if valor_elegido != "Todos":
+            df_filtrado = df_filtrado[
+                df_filtrado[columna] == valor_elegido
+            ]
 
     if fecha != "Cualquiera":
 

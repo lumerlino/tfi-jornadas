@@ -5,6 +5,7 @@ from utils.limpieza_datos import (
     detectar_columnas_asistencia,
     construir_asistencia_larga
 )
+from utils.clasificacion_columnas import columnas_no_mapeadas
 
 
 def validar_metadatos_jornada(metadatos):
@@ -162,21 +163,12 @@ COLUMNAS_PARTICIPACIONES = {
 }
 
 
-def columnas_no_mapeadas(df):
-
-    columnas_asistencia = set(detectar_columnas_asistencia(df))
-
-    return [
-        columna
-        for columna in df.columns
-        if columna not in COLUMNAS_PARTICIPACIONES
-        and columna not in columnas_asistencia
-    ]
-
-
 def preparar_participaciones(df, carga_id):
 
-    columnas_extra = columnas_no_mapeadas(df)
+    columnas_extra = columnas_no_mapeadas(
+        df,
+        COLUMNAS_PARTICIPACIONES.keys()
+    )
 
     registros = []
 
