@@ -200,7 +200,7 @@ def preparar_participaciones(df, carga_id):
     return registros
 
 
-def preparar_asistencias_dia(df, carga_id):
+def preparar_asistencias_dia(df, carga_id, id_por_documento=None):
 
     columnas_asistencia = detectar_columnas_asistencia(df)
 
@@ -212,14 +212,22 @@ def preparar_asistencias_dia(df, carga_id):
         columnas_asistencia
     )
 
+    id_por_documento = id_por_documento or {}
+
     registros = []
 
     for _, fila in asistencia_larga.iterrows():
 
+        documento = preparar_valor(fila["documento"])
+
         registros.append(
             {
                 "carga_id": carga_id,
-                "documento": preparar_valor(fila["documento"]),
+                "documento": documento,
+                # Enlace real por id (ver migración 0003) en vez
+                # de depender solo del texto de "documento", que
+                # se rompería silenciosamente si algún día se edita.
+                "participacion_id": id_por_documento.get(documento),
                 "fecha": fila["fecha"].date().isoformat(),
                 "asistio": bool(fila["asistio"])
             }
@@ -231,15 +239,21 @@ def preparar_asistencias_dia(df, carga_id):
 def guardar_en_lotes(tabla, registros, tamanio_lote=500):
 
     if not registros:
-        return
+        return []
 
     supabase = obtener_cliente_supabase()
+
+    insertados = []
 
     for inicio in range(0, len(registros), tamanio_lote):
 
         lote = registros[inicio:inicio + tamanio_lote]
 
-        supabase.table(tabla).insert(lote).execute()
+        respuesta = supabase.table(tabla).insert(lote).execute()
+
+        insertados.extend(respuesta.data)
+
+    return insertados
 
 
 def guardar_carga(df, metadatos):
@@ -251,9 +265,24 @@ def guardar_carga(df, metadatos):
     try:
 
         participaciones = preparar_participaciones(df, carga["id"])
-        asistencias_dia = preparar_asistencias_dia(df, carga["id"])
 
-        guardar_en_lotes("participaciones", participaciones)
+        participaciones_guardadas = guardar_en_lotes(
+            "participaciones",
+            participaciones
+        )
+
+        id_por_documento = {
+            fila["documento"]: fila["id"]
+            for fila in participaciones_guardadas
+            if fila.get("documento") is not None
+        }
+
+        asistencias_dia = preparar_asistencias_dia(
+            df,
+            carga["id"],
+            id_por_documento
+        )
+
         guardar_en_lotes("asistencias_dia", asistencias_dia)
 
     except Exception:

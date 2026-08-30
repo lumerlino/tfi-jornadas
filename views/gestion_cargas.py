@@ -1,6 +1,11 @@
 import streamlit as st
 
-from utils.gestion_cargas import listar_cargas, eliminar_carga
+from utils.gestion_cargas import (
+    listar_cargas,
+    eliminar_carga,
+    obtener_participaciones_carga,
+    actualizar_participacion
+)
 
 
 def mostrar_gestion_cargas():
@@ -57,6 +62,107 @@ def mostrar_gestion_cargas():
                 f"**Personas guardadas:** "
                 f"{carga['cantidad_participaciones']}"
             )
+
+            st.divider()
+
+
+            # --------------------------------------------------
+            # EDITAR PARTICIPACIONES
+            # --------------------------------------------------
+
+            st.markdown("#### ✏️ Editar participaciones")
+
+            clave_cargado = f"editar_cargado_{carga['carga_id']}"
+
+            if st.button(
+                "Cargar participaciones para editar",
+                key=f"btn_cargar_edicion_{carga['carga_id']}"
+            ):
+                st.session_state[clave_cargado] = True
+
+            if st.session_state.get(clave_cargado):
+
+                try:
+
+                    df_participaciones = obtener_participaciones_carga(
+                        carga["carga_id"]
+                    )
+
+                except Exception as error:
+
+                    df_participaciones = None
+
+                    st.warning(
+                        "No se pudieron cargar las participaciones "
+                        "para editar."
+                    )
+
+                    with st.expander("Detalle técnico"):
+                        st.write(f"{type(error).__name__}: {error}")
+
+                if df_participaciones is not None:
+
+                    if df_participaciones.empty:
+
+                        st.info(
+                            "No hay participaciones para editar en "
+                            "esta carga."
+                        )
+
+                    else:
+
+                        df_editado = st.data_editor(
+                            df_participaciones,
+                            disabled=["id"],
+                            hide_index=True,
+                            use_container_width=True,
+                            key=f"editor_participaciones_{carga['carga_id']}"
+                        )
+
+                        if st.button(
+                            "💾 Guardar cambios en participaciones",
+                            key=f"guardar_edicion_{carga['carga_id']}"
+                        ):
+
+                            filas_cambiadas = 0
+
+                            for indice in df_participaciones.index:
+
+                                fila_original = (
+                                    df_participaciones.loc[indice]
+                                )
+
+                                fila_editada = (
+                                    df_editado.loc[indice]
+                                )
+
+                                if not fila_original.equals(fila_editada):
+
+                                    actualizar_participacion(
+                                        fila_original["id"],
+                                        fila_editada
+                                        .drop("id")
+                                        .to_dict()
+                                    )
+
+                                    filas_cambiadas += 1
+
+                            st.success(
+                                f"Se guardaron cambios en "
+                                f"{filas_cambiadas} fila(s)."
+                            )
+
+                            st.session_state[clave_cargado] = False
+
+                            st.rerun()
+
+
+            st.divider()
+
+
+            # --------------------------------------------------
+            # ELIMINAR CARGA
+            # --------------------------------------------------
 
             st.warning(
                 "Borrar esta carga es definitivo: se eliminan todas "

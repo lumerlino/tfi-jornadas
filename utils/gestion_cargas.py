@@ -1,4 +1,17 @@
+from datetime import datetime, timezone
+
+import pandas as pd
+
 from utils.supabase_cliente import obtener_cliente_supabase
+from utils.guardado_historico import COLUMNAS_PARTICIPACIONES
+
+
+# Inverso de COLUMNAS_PARTICIPACIONES: de columna de la tabla
+# (snake_case) al nombre "de display" que se usa en el editor.
+COLUMNAS_DB_A_DISPLAY = {
+    columna_db: columna_display
+    for columna_display, columna_db in COLUMNAS_PARTICIPACIONES.items()
+}
 
 
 def listar_cargas():
@@ -65,3 +78,48 @@ def eliminar_carga(carga_id):
     # "asistencias_dia" (ver supabase/migrations/0001_esquema_historico.sql),
     # así que borrar la carga se lleva todo lo que dependía de ella.
     supabase.table("cargas").delete().eq("id", carga_id).execute()
+
+
+def obtener_participaciones_carga(carga_id):
+
+    supabase = obtener_cliente_supabase()
+
+    respuesta = (
+        supabase
+        .table("participaciones")
+        .select("*")
+        .eq("carga_id", carga_id)
+        .execute()
+    )
+
+    if not respuesta.data:
+        return pd.DataFrame()
+
+    df = pd.DataFrame(respuesta.data)
+
+    df = df.rename(columns=COLUMNAS_DB_A_DISPLAY)
+
+    columnas_a_mostrar = ["id"] + [
+        columna
+        for columna in COLUMNAS_PARTICIPACIONES.keys()
+        if columna in df.columns
+    ]
+
+    return df[columnas_a_mostrar]
+
+
+def actualizar_participacion(id_participacion, cambios_display):
+
+    supabase = obtener_cliente_supabase()
+
+    datos = {
+        COLUMNAS_PARTICIPACIONES[columna_display]: valor
+        for columna_display, valor in cambios_display.items()
+        if columna_display in COLUMNAS_PARTICIPACIONES
+    }
+
+    datos["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+    supabase.table("participaciones").update(datos).eq(
+        "id", id_participacion
+    ).execute()
