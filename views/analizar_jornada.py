@@ -23,10 +23,7 @@ from utils.configuracion_columnas import (
 )
 from components.jornada.indicadores import mostrar_indicadores
 from components.jornada.participacion import mostrar_participacion
-from components.jornada.permanencia import mostrar_permanencia
-from components.jornada.registro_qr import mostrar_registro_qr
 from components.jornada.tabla_datos import mostrar_datos
-from components.jornada.ocupacion import mostrar_ocupacion
 from components.jornada.calidad_datos import mostrar_calidad_datos
 from components.jornada.metadatos import mostrar_metadatos_jornada
 from components.jornada.explorar import mostrar_explorar
@@ -530,6 +527,16 @@ def mostrar_analizar_jornada():
         f"Se encontraron {len(df)} registros."
     )
 
+    st.caption(
+        "ℹ️ Permanencia, Ocupación de aulas y Registro QR no están "
+        "disponibles con este sistema de inscripción: el archivo no "
+        "trae horarios de ingreso/egreso, asignación de aulas ni un "
+        "log de lecturas QR — solo el código asignado a cada "
+        "persona. Si el sistema de origen empieza a registrar esos "
+        "datos, estas vistas se pueden reactivar (el código ya "
+        "existe en components/jornada/)."
+    )
+
 
     # --------------------------------------------------
     # FILTROS
@@ -557,12 +564,9 @@ def mostrar_analizar_jornada():
     # PESTAÑAS DEL DASHBOARD
     # --------------------------------------------------
 
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
+    tab1, tab2, tab3, tab4 = st.tabs(
         [
             "👥 Participación",
-            "⏱ Permanencia",
-            "🏫 Ocupación",
-            "📱 Registro QR",
             "🔎 Calidad de datos",
             "📋 Datos",
             "📈 Explorar"
@@ -579,40 +583,19 @@ def mostrar_analizar_jornada():
 
     with tab2:
 
-        mostrar_permanencia(
-            df_filtrado
-        )
-
-
-    with tab3:
-
-        mostrar_ocupacion(
-            df_filtrado
-        )
-
-
-    with tab4:
-
-        mostrar_registro_qr(
-            df_filtrado
-        )
-
-
-    with tab5:
-
         mostrar_calidad_datos(
             df_vista
         )
 
 
-    with tab6:
+    with tab3:
 
         mostrar_datos(
             df_filtrado
         )
 
 
-    with tab7:
+    with tab4:
 
         mostrar_explorar(
             df_filtrado,

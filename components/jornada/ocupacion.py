@@ -1,3 +1,14 @@
+# --------------------------------------------------
+# Desconectado a propósito de views/analizar_jornada.py: el
+# esquema real de inscripción no trae asignación de aula ni de
+# actividad por persona, así que no hay nada que calcular. Si el
+# sistema de origen alguna vez registra eso, se puede reactivar
+# agregando la pestaña de vuelta en views/analizar_jornada.py. La
+# lógica de análisis original (ocupación por actividad, capacidad
+# vs. participantes) quedó en el historial de git de este archivo,
+# de antes del refactor al esquema real.
+# --------------------------------------------------
+
 import streamlit as st
 
 
