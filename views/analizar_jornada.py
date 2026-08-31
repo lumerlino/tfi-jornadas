@@ -116,7 +116,7 @@ def mostrar_analizar_jornada():
             # antes de confirmar el análisis
             if not st.session_state["analisis_confirmado"]:
 
-                metadatos = mostrar_metadatos_jornada()
+                metadatos = mostrar_metadatos_jornada(df)
 
 
     # --------------------------------------------------
@@ -308,12 +308,27 @@ def mostrar_analizar_jornada():
 
                 st.write("Sin valores faltantes.")
 
-        st.caption(
-            f"Columnas de asistencia detectadas: "
-            f"{', '.join(reporte_limpieza_despues['columnas_asistencia'])}. "
-            f"Inconsistencias entre 'isPresent' y la asistencia por día: "
-            f"{reporte_limpieza_despues['inconsistencias_asistencia']}."
+        columnas_asistencia_detectadas = (
+            reporte_limpieza_despues["columnas_asistencia"]
         )
+
+        if columnas_asistencia_detectadas:
+
+            st.caption(
+                f"Columnas de asistencia detectadas: "
+                f"{', '.join(columnas_asistencia_detectadas)}. "
+                f"Inconsistencias entre 'isPresent' y la asistencia "
+                f"por día: "
+                f"{reporte_limpieza_despues['inconsistencias_asistencia']}."
+            )
+
+        else:
+
+            st.caption(
+                "Este archivo no trae columnas de asistencia por "
+                "día ('Asistencia YYYY-MM-DD') — se usa 'isPresent' "
+                "directamente como fuente de asistencia."
+            )
 
 
     # --------------------------------------------------

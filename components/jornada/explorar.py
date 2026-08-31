@@ -1,5 +1,33 @@
 import streamlit as st
+import pandas as pd
 import plotly.express as px
+
+
+def normalizar_booleano(valores):
+
+    # "Tasa (%)" espera True/False reales. Muchas columnas
+    # "booleanas" en realidad son texto tipo "Si"/"No" (así vienen
+    # del Excel, ej. "Miembro UNLa") en vez de bool de Python —
+    # se normalizan acá sin tocar el DataFrame original.
+
+    if pd.api.types.is_bool_dtype(valores):
+        return valores
+
+    return (
+        valores
+        .astype(str)
+        .str.strip()
+        .str.lower()
+        .map(
+            {
+                "si": True,
+                "sí": True,
+                "true": True,
+                "no": False,
+                "false": False
+            }
+        )
+    )
 
 
 def renderizar_metrica(valores, nombre_display, metrica, key_prefix="explorar"):
@@ -72,7 +100,7 @@ def renderizar_metrica(valores, nombre_display, metrica, key_prefix="explorar"):
 
     elif metrica == "Tasa (%)":
 
-        tasa = valores.mean() * 100
+        tasa = normalizar_booleano(valores).mean() * 100
 
         st.metric(
             f"{nombre_display} (Sí)",

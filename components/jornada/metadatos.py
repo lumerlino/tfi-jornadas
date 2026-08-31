@@ -1,8 +1,27 @@
 import streamlit as st
 from datetime import date
 
+from utils.limpieza_datos import detectar_columnas_asistencia
 
-def mostrar_metadatos_jornada():
+
+def inferir_fechas_desde_asistencia(df):
+
+    columnas_asistencia = detectar_columnas_asistencia(df)
+
+    if not columnas_asistencia:
+        return None
+
+    fechas = sorted(
+        date.fromisoformat(
+            columna.replace("Asistencia ", "")
+        )
+        for columna in columnas_asistencia
+    )
+
+    return fechas[0], fechas[-1]
+
+
+def mostrar_metadatos_jornada(df=None):
 
     st.markdown(
         "### Datos generales de la jornada"
@@ -40,9 +59,29 @@ def mostrar_metadatos_jornada():
 
     else:
 
-        anio_inicial = 2026
-        fecha_inicio_inicial = date.today()
-        fecha_fin_inicial = date.today()
+        fechas_inferidas = (
+            inferir_fechas_desde_asistencia(df)
+            if df is not None
+            else None
+        )
+
+        if fechas_inferidas is not None:
+
+            fecha_inicio_inicial, fecha_fin_inicial = fechas_inferidas
+            anio_inicial = fecha_inicio_inicial.year
+
+            st.info(
+                "Se detectaron columnas de asistencia por día en el "
+                "archivo — se completaron el año y las fechas de "
+                "inicio/fin automáticamente. Podés ajustarlas si "
+                "hace falta."
+            )
+
+        else:
+
+            anio_inicial = 2026
+            fecha_inicio_inicial = date.today()
+            fecha_fin_inicial = date.today()
 
 
     # --------------------------------------------------

@@ -1,6 +1,3 @@
-from utils.limpieza_datos import detectar_columnas_asistencia
-
-
 COLUMNAS_OBLIGATORIAS = [
     "Nombre/s",
     "Apellido/s",
@@ -16,18 +13,19 @@ COLUMNAS_OBLIGATORIAS = [
     "IsAssistanceCertifySent"
 ]
 
+
 def validar_columnas(df):
+
+    # Las columnas "Asistencia YYYY-MM-DD" son opcionales: si
+    # existen, habilitan asistencia por día; si no (como en el
+    # Excel 2024, que solo trae "isPresent"), utils/limpieza_datos.py
+    # ::limpiar_datos ya sabe usar "isPresent" directo como fuente
+    # de asistencia. No hace falta exigirlas acá.
 
     columnas_faltantes = [
         columna
         for columna in COLUMNAS_OBLIGATORIAS
         if columna not in df.columns
     ]
-
-    if not detectar_columnas_asistencia(df):
-
-        columnas_faltantes.append(
-            "Asistencia YYYY-MM-DD (al menos un día)"
-        )
 
     return columnas_faltantes
