@@ -4,7 +4,6 @@ import streamlit as st
 
 from utils.carga_datos import cargar_datos_demo, cargar_excel_usuario
 from utils.transformaciones import preparar_datos
-from utils.filtros import aplicar_filtros
 from utils.validaciones import validar_columnas
 from utils.guardado_historico import (
     validar_metadatos_jornada,
@@ -21,12 +20,8 @@ from utils.configuracion_columnas import (
     guardar_configuracion,
     CONFIGURACION_POR_DEFECTO
 )
-from components.jornada.indicadores import mostrar_indicadores
-from components.jornada.participacion import mostrar_participacion
-from components.jornada.tabla_datos import mostrar_datos
-from components.jornada.calidad_datos import mostrar_calidad_datos
 from components.jornada.metadatos import mostrar_metadatos_jornada
-from components.jornada.explorar import mostrar_explorar
+from views.dashboard_jornada import mostrar_dashboard_jornada
 
 
 def mostrar_analizar_jornada():
@@ -414,29 +409,6 @@ def mostrar_analizar_jornada():
 
 
     # --------------------------------------------------
-    # VISTA DE ANÁLISIS: solo columnas oficiales + asistencia
-    # + configuradas. El "df" completo (con todo lo que trajo
-    # el Excel) se sigue usando para guardar en Supabase más
-    # abajo, así "datos_extra" no pierde nada — esto solo
-    # recorta lo que se filtra/grafica/muestra en pantalla.
-    # --------------------------------------------------
-
-    columnas_a_mantener = (
-        set(COLUMNAS_PARTICIPACIONES.keys())
-        | set(reporte_limpieza_despues["columnas_asistencia"])
-        | set(configuraciones.keys())
-    )
-
-    df_vista = df[
-        [
-            columna
-            for columna in df.columns
-            if columna in columnas_a_mantener
-        ]
-    ]
-
-
-    # --------------------------------------------------
     # RESUMEN DE LOS DATOS GENERALES
     # --------------------------------------------------
 
@@ -527,77 +499,13 @@ def mostrar_analizar_jornada():
         f"Se encontraron {len(df)} registros."
     )
 
-    st.caption(
-        "ℹ️ Permanencia, Ocupación de aulas y Registro QR no están "
-        "disponibles con este sistema de inscripción: el archivo no "
-        "trae horarios de ingreso/egreso, asignación de aulas ni un "
-        "log de lecturas QR — solo el código asignado a cada "
-        "persona. Si el sistema de origen empieza a registrar esos "
-        "datos, estas vistas se pueden reactivar (el código ya "
-        "existe en components/jornada/)."
-    )
-
 
     # --------------------------------------------------
-    # FILTROS
+    # DASHBOARD (compartido con "Ver jornada" en Histórico,
+    # ver views/dashboard_jornada.py)
     # --------------------------------------------------
 
-    df_filtrado = aplicar_filtros(
-        df_vista,
+    mostrar_dashboard_jornada(
+        df,
         configuraciones
     )
-
-
-    # --------------------------------------------------
-    # INDICADORES
-    # --------------------------------------------------
-
-    mostrar_indicadores(
-        df_filtrado
-    )
-
-
-    st.divider()
-
-
-    # --------------------------------------------------
-    # PESTAÑAS DEL DASHBOARD
-    # --------------------------------------------------
-
-    tab1, tab2, tab3, tab4 = st.tabs(
-        [
-            "👥 Participación",
-            "🔎 Calidad de datos",
-            "📋 Datos",
-            "📈 Explorar"
-        ]
-    )
-
-
-    with tab1:
-
-        mostrar_participacion(
-            df_filtrado
-        )
-
-
-    with tab2:
-
-        mostrar_calidad_datos(
-            df_vista
-        )
-
-
-    with tab3:
-
-        mostrar_datos(
-            df_filtrado
-        )
-
-
-    with tab4:
-
-        mostrar_explorar(
-            df_filtrado,
-            configuraciones
-        )

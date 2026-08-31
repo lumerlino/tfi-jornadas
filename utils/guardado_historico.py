@@ -163,6 +163,17 @@ COLUMNAS_PARTICIPACIONES = {
 }
 
 
+# Inverso de lo anterior: de columna de la tabla (snake_case) al
+# nombre "de display" que usan los componentes de jornada/histórico
+# (ej. "rol_principal" -> "Rol principal"). Única fuente de verdad
+# para este mapeo — utils/historico_datos.py, utils/gestion_cargas.py
+# y utils/jornada_guardada.py lo importan de acá.
+COLUMNAS_PARTICIPACIONES_INVERSO = {
+    columna_destino: columna_origen
+    for columna_origen, columna_destino in COLUMNAS_PARTICIPACIONES.items()
+}
+
+
 def preparar_participaciones(df, carga_id):
 
     columnas_extra = columnas_no_mapeadas(

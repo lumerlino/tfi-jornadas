@@ -1,6 +1,12 @@
 import streamlit as st
 
 from utils.historico_datos import cargar_historico
+from utils.gestion_cargas import listar_cargas
+from utils.jornada_guardada import reconstruir_jornada
+from utils.configuracion_columnas import (
+    obtener_configuraciones,
+    CONFIGURACION_POR_DEFECTO
+)
 
 from components.historico.indicadores import mostrar_indicadores_historicos
 from components.historico.evolucion import mostrar_evolucion_historica
@@ -9,6 +15,7 @@ from components.historico.proyecciones import mostrar_proyecciones
 from components.historico.escenarios import mostrar_escenarios
 from components.historico.kpis_cruzados import mostrar_kpis_cruzados
 from components.historico.objetivos import mostrar_objetivos
+from views.dashboard_jornada import mostrar_dashboard_jornada
 
 
 def mostrar_historico():
@@ -36,7 +43,7 @@ def mostrar_historico():
         st.info("Todavía no hay jornadas guardadas en el histórico.")
         return
 
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
         [
             "📌 Resumen",
             "📈 Evolución",
@@ -44,7 +51,8 @@ def mostrar_historico():
             "🔮 Proyecciones",
             "🎛️ What-if",
             "🔗 KPIs cruzados",
-            "🎯 Objetivos"
+            "🎯 Objetivos",
+            "🔍 Ver jornada"
         ]
     )
 
@@ -162,6 +170,85 @@ def mostrar_historico():
         mostrar_objetivos(
             df_historico
         )
+
+
+    # --------------------------------------------------
+    # VER JORNADA: el mismo dashboard de "Analizar jornada",
+    # reconstruido a partir de una carga ya guardada (sin
+    # necesidad de volver a subir el Excel).
+    # --------------------------------------------------
+
+    with tab8:
+
+        try:
+
+            cargas = listar_cargas()
+
+        except Exception as error:
+
+            st.error(
+                "No se pudo conectar con la base de datos para "
+                "listar las cargas guardadas."
+            )
+
+            with st.expander("Detalle técnico"):
+                st.write(f"{type(error).__name__}: {error}")
+
+            cargas = []
+
+        if not cargas:
+
+            st.info(
+                "Todavía no hay ninguna carga guardada."
+            )
+
+        else:
+
+            opciones_carga = {
+                f"Jornada {carga['anio']} — carga N.º "
+                f"{carga['numero_carga']} "
+                f"({carga['cantidad_participaciones']} personas)": (
+                    carga["carga_id"]
+                )
+                for carga in cargas
+            }
+
+            seleccion = st.selectbox(
+                "Elegí una jornada guardada",
+                list(opciones_carga.keys()),
+                key="selector_ver_jornada"
+            )
+
+            carga_id_elegida = opciones_carga[seleccion]
+
+            df_jornada = reconstruir_jornada(carga_id_elegida)
+
+            if df_jornada.empty:
+
+                st.warning(
+                    "Esta carga no tiene participaciones guardadas."
+                )
+
+            else:
+
+                try:
+
+                    configuraciones_jornada = obtener_configuraciones()
+
+                except Exception:
+
+                    configuraciones_jornada = CONFIGURACION_POR_DEFECTO
+
+                    st.warning(
+                        "No se pudo cargar la configuración de "
+                        "columnas — se están usando los filtros "
+                        "por default."
+                    )
+
+                mostrar_dashboard_jornada(
+                    df_jornada,
+                    configuraciones_jornada
+                )
 
 
     # --------------------------------------------------

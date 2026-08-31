@@ -3,15 +3,10 @@ from datetime import datetime, timezone
 import pandas as pd
 
 from utils.supabase_cliente import obtener_cliente_supabase
-from utils.guardado_historico import COLUMNAS_PARTICIPACIONES
-
-
-# Inverso de COLUMNAS_PARTICIPACIONES: de columna de la tabla
-# (snake_case) al nombre "de display" que se usa en el editor.
-COLUMNAS_DB_A_DISPLAY = {
-    columna_db: columna_display
-    for columna_display, columna_db in COLUMNAS_PARTICIPACIONES.items()
-}
+from utils.guardado_historico import (
+    COLUMNAS_PARTICIPACIONES,
+    COLUMNAS_PARTICIPACIONES_INVERSO as COLUMNAS_DB_A_DISPLAY
+)
 
 
 def listar_cargas():

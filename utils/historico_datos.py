@@ -1,16 +1,7 @@
 import pandas as pd
 
 from utils.supabase_cliente import obtener_cliente_supabase
-from utils.guardado_historico import COLUMNAS_PARTICIPACIONES
-
-
-# Inverso de COLUMNAS_PARTICIPACIONES: de columna de la tabla
-# (snake_case) al nombre "de display" que usan los componentes
-# de jornada/histórico (ej. "rol_principal" -> "Rol principal").
-COLUMNAS_PARTICIPACIONES_INVERSO = {
-    columna_destino: columna_origen
-    for columna_origen, columna_destino in COLUMNAS_PARTICIPACIONES.items()
-}
+from utils.guardado_historico import COLUMNAS_PARTICIPACIONES_INVERSO
 
 
 def obtener_ultima_carga_por_jornada():
