@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 import pandas as pd
+import streamlit as st
 
 from utils.supabase_cliente import obtener_cliente_supabase
 from utils.guardado_historico import (
@@ -9,6 +10,48 @@ from utils.guardado_historico import (
 )
 
 
+def _contar_participaciones_por_carga(tamanio_pagina=1000):
+
+    # Una sola pasada paginada sobre "carga_id" en vez de una
+    # consulta de conteo por cada carga (N+1) — mismo patrón de
+    # paginación que utils/historico_datos.py::cargar_registros.
+
+    supabase = obtener_cliente_supabase()
+
+    conteos = {}
+    inicio = 0
+
+    while True:
+
+        fin = inicio + tamanio_pagina - 1
+
+        respuesta = (
+            supabase
+            .table("participaciones")
+            .select("carga_id")
+            .range(inicio, fin)
+            .execute()
+        )
+
+        pagina = respuesta.data
+
+        if not pagina:
+            break
+
+        for fila in pagina:
+            conteos[fila["carga_id"]] = (
+                conteos.get(fila["carga_id"], 0) + 1
+            )
+
+        if len(pagina) < tamanio_pagina:
+            break
+
+        inicio += tamanio_pagina
+
+    return conteos
+
+
+@st.cache_data(ttl=600, show_spinner="Cargando listado de cargas...")
 def listar_cargas():
 
     supabase = obtener_cliente_supabase()
@@ -36,17 +79,11 @@ def listar_cargas():
         .data
     )
 
+    conteos_por_carga = _contar_participaciones_por_carga()
+
     resultado = []
 
     for carga in cargas:
-
-        conteo = (
-            supabase
-            .table("participaciones")
-            .select("id", count="exact")
-            .eq("carga_id", carga["id"])
-            .execute()
-        )
 
         resultado.append(
             {
@@ -54,7 +91,9 @@ def listar_cargas():
                 "anio": anio_por_jornada.get(carga["jornada_id"]),
                 "numero_carga": carga["numero_carga"],
                 "fecha_carga": carga["fecha_carga"],
-                "cantidad_participaciones": conteo.count or 0
+                "cantidad_participaciones": conteos_por_carga.get(
+                    carga["id"], 0
+                )
             }
         )
 

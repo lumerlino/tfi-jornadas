@@ -1,4 +1,5 @@
 import pandas as pd
+import streamlit as st
 
 from utils.supabase_cliente import obtener_cliente_supabase
 
@@ -35,6 +36,7 @@ CONFIGURACION_POR_DEFECTO = {
 }
 
 
+@st.cache_data(ttl=600, show_spinner="Cargando configuración de columnas...")
 def obtener_configuraciones():
 
     supabase = obtener_cliente_supabase()

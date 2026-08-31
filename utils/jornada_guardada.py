@@ -1,4 +1,5 @@
 import pandas as pd
+import streamlit as st
 
 from utils.guardado_historico import COLUMNAS_PARTICIPACIONES_INVERSO
 from utils.historico_datos import cargar_registros
@@ -58,6 +59,7 @@ def _obtener_asistencia_ancha(carga_id):
     )
 
 
+@st.cache_data(ttl=600, show_spinner="Cargando datos de la jornada...")
 def reconstruir_jornada(carga_id):
 
     registros = cargar_registros("participaciones", carga_id)

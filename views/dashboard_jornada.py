@@ -3,6 +3,7 @@ import streamlit as st
 from utils.filtros import aplicar_filtros
 from utils.guardado_historico import COLUMNAS_PARTICIPACIONES
 from utils.limpieza_datos import detectar_columnas_asistencia
+from utils.ui_tabs import mostrar_tabs
 from components.jornada.indicadores import mostrar_indicadores
 from components.jornada.participacion import mostrar_participacion
 from components.jornada.tabla_datos import mostrar_datos
@@ -74,38 +75,39 @@ def mostrar_dashboard_jornada(df, configuraciones):
     # PESTAÑAS DEL DASHBOARD
     # --------------------------------------------------
 
-    tab1, tab2, tab3, tab4 = st.tabs(
+    pestania = mostrar_tabs(
         [
             "👥 Participación",
             "🔎 Calidad de datos",
             "📋 Datos",
             "📈 Explorar"
-        ]
+        ],
+        key="dashboard_jornada_tab"
     )
 
 
-    with tab1:
+    if pestania == "👥 Participación":
 
         mostrar_participacion(
             df_filtrado
         )
 
 
-    with tab2:
+    elif pestania == "🔎 Calidad de datos":
 
         mostrar_calidad_datos(
             df_vista
         )
 
 
-    with tab3:
+    elif pestania == "📋 Datos":
 
         mostrar_datos(
             df_filtrado
         )
 
 
-    with tab4:
+    elif pestania == "📈 Explorar":
 
         mostrar_explorar(
             df_filtrado,

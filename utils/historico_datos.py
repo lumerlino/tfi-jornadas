@@ -1,4 +1,5 @@
 import pandas as pd
+import streamlit as st
 
 from utils.supabase_cliente import obtener_cliente_supabase
 from utils.guardado_historico import COLUMNAS_PARTICIPACIONES_INVERSO
@@ -92,6 +93,7 @@ def construir_df_participaciones(registros_participaciones, jornada, carga):
     return df
 
 
+@st.cache_data(ttl=600, show_spinner="Cargando histórico de jornadas...")
 def cargar_historico():
 
     supabase = obtener_cliente_supabase()

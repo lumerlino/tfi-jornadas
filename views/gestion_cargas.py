@@ -6,6 +6,8 @@ from utils.gestion_cargas import (
     obtener_participaciones_carga,
     actualizar_participacion
 )
+from utils.historico_datos import cargar_historico
+from utils.jornada_guardada import reconstruir_jornada
 
 
 def mostrar_gestion_cargas():
@@ -147,6 +149,9 @@ def mostrar_gestion_cargas():
 
                                     filas_cambiadas += 1
 
+                            cargar_historico.clear()
+                            reconstruir_jornada.clear()
+
                             st.success(
                                 f"Se guardaron cambios en "
                                 f"{filas_cambiadas} fila(s)."
@@ -184,6 +189,10 @@ def mostrar_gestion_cargas():
             ):
 
                 eliminar_carga(carga["carga_id"])
+
+                cargar_historico.clear()
+                listar_cargas.clear()
+                reconstruir_jornada.clear()
 
                 st.success(
                     f"Carga N.º {carga['numero_carga']} de la "

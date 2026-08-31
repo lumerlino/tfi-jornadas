@@ -7,6 +7,7 @@ from utils.configuracion_columnas import (
     obtener_configuraciones,
     CONFIGURACION_POR_DEFECTO
 )
+from utils.ui_tabs import mostrar_tabs
 
 from components.historico.indicadores import mostrar_indicadores_historicos
 from components.historico.evolucion import mostrar_evolucion_historica
@@ -43,7 +44,7 @@ def mostrar_historico():
         st.info("Todavía no hay jornadas guardadas en el histórico.")
         return
 
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
+    pestania = mostrar_tabs(
         [
             "📌 Resumen",
             "📈 Evolución",
@@ -53,7 +54,8 @@ def mostrar_historico():
             "🔗 KPIs cruzados",
             "🎯 Objetivos",
             "🔍 Ver jornada"
-        ]
+        ],
+        key="historico_tab"
     )
 
 
@@ -61,7 +63,7 @@ def mostrar_historico():
     # RESUMEN
     # --------------------------------------------------
 
-    with tab1:
+    if pestania == "📌 Resumen":
 
         mostrar_indicadores_historicos(
             df_historico
@@ -110,7 +112,7 @@ def mostrar_historico():
     # EVOLUCIÓN
     # --------------------------------------------------
 
-    with tab2:
+    elif pestania == "📈 Evolución":
 
         mostrar_evolucion_historica(
             df_historico
@@ -121,7 +123,7 @@ def mostrar_historico():
     # COMPOSICIÓN
     # --------------------------------------------------
 
-    with tab3:
+    elif pestania == "👥 Composición":
 
         mostrar_composicion_historica(
             df_historico
@@ -132,7 +134,7 @@ def mostrar_historico():
     # PROYECCIONES
     # --------------------------------------------------
 
-    with tab4:
+    elif pestania == "🔮 Proyecciones":
 
         mostrar_proyecciones(
             df_historico
@@ -143,7 +145,7 @@ def mostrar_historico():
     # WHAT-IF
     # --------------------------------------------------
 
-    with tab5:
+    elif pestania == "🎛️ What-if":
 
         mostrar_escenarios(
             df_historico
@@ -154,7 +156,7 @@ def mostrar_historico():
     # KPIS CRUZADOS
     # --------------------------------------------------
 
-    with tab6:
+    elif pestania == "🔗 KPIs cruzados":
 
         mostrar_kpis_cruzados(
             df_historico
@@ -165,7 +167,7 @@ def mostrar_historico():
     # OBJETIVOS
     # --------------------------------------------------
 
-    with tab7:
+    elif pestania == "🎯 Objetivos":
 
         mostrar_objetivos(
             df_historico
@@ -178,7 +180,7 @@ def mostrar_historico():
     # necesidad de volver a subir el Excel).
     # --------------------------------------------------
 
-    with tab8:
+    elif pestania == "🔍 Ver jornada":
 
         try:
 

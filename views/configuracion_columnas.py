@@ -131,6 +131,8 @@ def mostrar_configuracion_columnas():
                         metrica
                     )
 
+                    obtener_configuraciones.clear()
+
                     st.success("Configuración actualizada.")
                     st.rerun()
 
@@ -149,6 +151,8 @@ def mostrar_configuracion_columnas():
                 ):
 
                     eliminar_configuracion(columna_excel)
+
+                    obtener_configuraciones.clear()
 
                     st.success(
                         "Configuración eliminada. La columna va a "

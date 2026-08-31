@@ -20,6 +20,9 @@ from utils.configuracion_columnas import (
     guardar_configuracion,
     CONFIGURACION_POR_DEFECTO
 )
+from utils.historico_datos import cargar_historico
+from utils.gestion_cargas import listar_cargas
+from utils.jornada_guardada import reconstruir_jornada
 from components.jornada.metadatos import mostrar_metadatos_jornada
 from views.dashboard_jornada import mostrar_dashboard_jornada
 
@@ -405,6 +408,8 @@ def mostrar_analizar_jornada():
                             metrica
                         )
 
+                        obtener_configuraciones.clear()
+
                         st.rerun()
 
 
@@ -477,6 +482,10 @@ def mostrar_analizar_jornada():
                     df=df,
                     metadatos=metadatos_guardados
                 )
+
+                cargar_historico.clear()
+                listar_cargas.clear()
+                reconstruir_jornada.clear()
 
                 st.success(
                     "Los datos se guardaron correctamente en el histórico."
