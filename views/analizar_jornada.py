@@ -1,3 +1,4 @@
+import io
 import os
 
 import streamlit as st
@@ -26,7 +27,12 @@ from utils.jornada_guardada import reconstruir_jornada
 from components.jornada.metadatos import mostrar_metadatos_jornada
 from views.dashboard_jornada import mostrar_dashboard_jornada
 from components.navegacion import ir_a
-from components.ui import PASOS_CARGA, mostrar_error, mostrar_pasos
+from components.ui import (
+    PASOS_CARGA,
+    mostrar_archivo_cargado,
+    mostrar_error,
+    mostrar_pasos
+)
 from utils.resumen_jornadas import de_cada_10, formatear_numero
 
 
@@ -34,6 +40,20 @@ from utils.resumen_jornadas import de_cada_10, formatear_numero
 # oculto: abrumaba al terminar la carga. El código sigue; para
 # volver a ofrecerlo alcanza con poner esto en True.
 MOSTRAR_TABLERO_COMPLETO = False
+
+
+def _cambiar_archivo():
+
+    # Vuelve al paso 1: descarta el archivo y todo lo que dependía
+    # de él. El contador renueva la key del file_uploader para que
+    # aparezca vacío.
+    for clave in ("archivo_excel", "carga_guardada", "animar_pasos_desde"):
+        st.session_state.pop(clave, None)
+
+    st.session_state["analisis_confirmado"] = False
+    st.session_state["editar_metadatos"] = False
+    st.session_state["metadatos_jornada"] = None
+    st.session_state["subidas_excel"] = st.session_state.get("subidas_excel", 0) + 1
 
 
 def mostrar_analizar_jornada():
@@ -110,15 +130,39 @@ def mostrar_analizar_jornada():
 
     if opcion == "📤 Cargar archivo Excel":
 
-        archivo = st.file_uploader(
-            "Seleccionar archivo Excel",
-            type=["xlsx"]
-        )
+        # El Excel subido se guarda en session_state y el
+        # file_uploader deja de mostrarse: en su lugar queda una
+        # sola línea con el archivo y "Cambiar archivo".
+        archivo_guardado = st.session_state.get("archivo_excel")
 
-        if archivo is not None:
+        if archivo_guardado is None:
+
+            archivo = st.file_uploader(
+                "Excel de inscripción y asistencia de la jornada",
+                type=["xlsx"],
+                key=f"subir_excel_{st.session_state.get('subidas_excel', 0)}"
+            )
+
+            if archivo is not None:
+
+                st.session_state["archivo_excel"] = {
+                    "nombre": archivo.name,
+                    "datos": archivo.getvalue()
+                }
+
+                st.rerun()
+
+        else:
 
             df = cargar_excel_usuario(
-                archivo
+                io.BytesIO(archivo_guardado["datos"])
+            )
+
+            mostrar_archivo_cargado(
+                archivo_guardado["nombre"],
+                len(df),
+                al_cambiar=_cambiar_archivo,
+                key="cambiar_archivo_excel"
             )
 
             # Mostramos el formulario solamente
@@ -150,12 +194,10 @@ def mostrar_analizar_jornada():
 
     if df is None:
 
+        # Sin aviso extra: la frase de arriba y el paso 1 resaltado
+        # ya dicen qué hacer.
         if carga_excel:
             mostrar_pasos(guia_pasos, 0)
-
-        st.info(
-            "Cargá un archivo Excel para comenzar el análisis."
-        )
 
         return
 
@@ -470,10 +512,27 @@ def mostrar_analizar_jornada():
     # completo del archivo queda plegado al final.
     # --------------------------------------------------
 
-    st.success(
-        f"Listo: el archivo se leyó y se limpió sin problemas "
-        f"({formatear_numero(len(df))} registros)."
-    )
+    # La línea del archivo muestra las filas del Excel; si la
+    # limpieza descartó alguna, se aclara acá para que los dos
+    # números no parezcan contradecirse.
+    descartadas = reporte_limpieza_antes["filas"] - len(df)
+
+    if descartadas > 0:
+        st.success(
+            f"Listo: el archivo se leyó y se limpió. Quedaron "
+            f"{formatear_numero(len(df))} registros; "
+            + (
+                "se descartó 1 fila repetida o vacía."
+                if descartadas == 1
+                else f"se descartaron {formatear_numero(descartadas)} "
+                "filas repetidas o vacías."
+            )
+        )
+    else:
+        st.success(
+            f"Listo: el archivo se leyó y se limpió sin problemas "
+            f"({formatear_numero(len(df))} registros)."
+        )
 
     if (
         opcion == "📤 Cargar archivo Excel"

@@ -272,3 +272,48 @@ def mostrar_error(error, que_fallo):
             "".join(traceback.format_exception(error)),
             language=None
         )
+
+
+# --------------------------------------------------
+# ARCHIVO CARGADO: reemplaza al file_uploader una vez subido el
+# Excel, para no repetir el archivo en dos filas. Mismo círculo
+# bordó con ✓ que un paso completo de la guía de carga.
+# --------------------------------------------------
+
+
+def mostrar_archivo_cargado(nombre, registros, al_cambiar, key):
+
+    marca = COLORES["light"]["marca"]
+
+    cantidad = f"{int(registros):,}".replace(",", ".")
+
+    with st.container(border=True):
+
+        col_archivo, col_boton = st.columns(
+            [4, 1],
+            vertical_alignment="center"
+        )
+
+        with col_archivo:
+
+            st.markdown(
+                f"""
+                <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;">
+                    <span style="flex:none;width:1.4rem;height:1.4rem;border-radius:50%;
+                        display:grid;place-items:center;font-size:0.75rem;font-weight:700;
+                        background:{marca};color:#ffffff;">✓</span>
+                    <span style="font-weight:600;overflow-wrap:anywhere;">{html.escape(nombre)}</span>
+                    <span style="opacity:0.7;">· {cantidad} filas</span>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with col_boton:
+
+            st.button(
+                "Cambiar archivo",
+                key=key,
+                on_click=al_cambiar,
+                width="stretch"
+            )
