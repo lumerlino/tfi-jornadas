@@ -8,6 +8,7 @@ from views.analizar_jornada import mostrar_analizar_jornada
 from views.historico import mostrar_historico
 from views.configuracion_columnas import mostrar_configuracion_columnas
 from views.gestion_cargas import mostrar_gestion_cargas
+from views.preparar_datos import mostrar_preparar_datos
 from utils.tema import mostrar_encabezado
 
 
@@ -21,10 +22,12 @@ st.set_page_config(
 # --------------------------------------------------
 # NAVEGACIÓN
 #
-# Arriba, las tres preguntas que se hace quien organiza la jornada.
-# Abajo, "Preparar datos": la carga y administración de los datos,
-# separada del recorrido principal. El análisis completo anterior
-# (todas las pestañas del histórico) queda en "Explorar en detalle".
+# En el menú: las tres preguntas que se hace quien organiza la
+# jornada y una sola entrada "Preparar datos" (la trastienda), que
+# abre una pantalla con las tareas. Las tareas no van en el menú,
+# pero siguen siendo páginas con URL propia. El análisis completo
+# anterior (las pestañas del histórico) queda en "Explorar en
+# detalle".
 # --------------------------------------------------
 
 PAGINAS.update({
@@ -46,6 +49,12 @@ PAGINAS.update({
         title="Nuestra próxima jornada",
         icon=":material/flag:",
         url_path="proxima-jornada"
+    ),
+    "preparar_datos": st.Page(
+        mostrar_preparar_datos,
+        title="Preparar datos",
+        icon=":material/settings:",
+        url_path="preparar-datos"
     ),
     "cargar_jornada": st.Page(
         mostrar_analizar_jornada,
@@ -73,19 +82,29 @@ PAGINAS.update({
     ),
 })
 
-pagina = st.navigation({
-    "": [
-        PAGINAS["como_nos_fue"],
-        PAGINAS["que_cambio"],
-        PAGINAS["proxima_jornada"],
-    ],
-    "Preparar datos": [
-        PAGINAS["cargar_jornada"],
-        PAGINAS["jornadas_guardadas"],
-        PAGINAS["columnas"],
-        PAGINAS["explorar"],
-    ],
-})
+TAREAS = ["cargar_jornada", "jornadas_guardadas", "columnas", "explorar"]
+
+# El menú lo dibujamos nosotros (position="hidden"): st.navigation
+# mostraría todas las páginas, incluidas las tareas.
+pagina = st.navigation(list(PAGINAS.values()), position="hidden")
+
+with st.sidebar:
+
+    st.page_link(PAGINAS["como_nos_fue"])
+    st.page_link(PAGINAS["que_cambio"])
+    st.page_link(PAGINAS["proxima_jornada"])
+
+    st.divider()
+
+    st.page_link(PAGINAS["preparar_datos"])
+
+    tarea_actual = next(
+        (clave for clave in TAREAS if PAGINAS[clave].url_path == pagina.url_path),
+        None
+    )
+
+    if tarea_actual:
+        st.caption(f"↳ {pagina.title}")
 
 
 # --------------------------------------------------
@@ -93,5 +112,8 @@ pagina = st.navigation({
 # --------------------------------------------------
 
 mostrar_encabezado()
+
+if tarea_actual:
+    st.page_link(PAGINAS["preparar_datos"], label="Volver a Preparar datos", icon=":material/arrow_back:")
 
 pagina.run()

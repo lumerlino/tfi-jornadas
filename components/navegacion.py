@@ -11,7 +11,11 @@ import streamlit as st
 PAGINAS = {}
 
 
-def ir_a(clave, texto):
+def ir_a(clave, texto, principal=False):
 
-    if st.button(texto, key=f"ir_a_{clave}"):
+    if st.button(
+        texto,
+        key=f"ir_a_{clave}",
+        type="primary" if principal else "secondary"
+    ):
         st.switch_page(PAGINAS[clave])
