@@ -1,6 +1,6 @@
 import streamlit as st
 
-from views.inicio import mostrar_inicio
+from views.como_nos_fue import mostrar_como_nos_fue
 from views.analizar_jornada import mostrar_analizar_jornada
 from views.historico import mostrar_historico
 from views.configuracion_columnas import mostrar_configuracion_columnas
@@ -20,7 +20,7 @@ st.set_page_config(
 # --------------------------------------------------
 
 opciones = [
-    "🏠 Inicio",
+    "🏠 Cómo nos fue",
     "📤 Analizar jornada",
     "📊 Histórico",
     "⚙️ Configuración",
@@ -35,7 +35,7 @@ opciones = [
 if "pagina" not in st.session_state:
 
     st.session_state["pagina"] = (
-        "🏠 Inicio"
+        "🏠 Cómo nos fue"
     )
 
 
@@ -81,9 +81,9 @@ pagina = st.session_state["pagina"]
 mostrar_encabezado()
 
 
-if pagina == "🏠 Inicio":
+if pagina == "🏠 Cómo nos fue":
 
-    mostrar_inicio()
+    mostrar_como_nos_fue()
 
 
 elif pagina == "📤 Analizar jornada":
