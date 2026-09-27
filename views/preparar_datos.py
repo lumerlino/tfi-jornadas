@@ -1,6 +1,7 @@
 import streamlit as st
 
 from components.navegacion import ir_a
+from components.ui import PASOS_CARGA
 
 
 # --------------------------------------------------
@@ -9,14 +10,6 @@ from components.navegacion import ir_a
 # Una sola entrada en el menú; desde acá se llega a cada tarea.
 # Tono orientado a tareas, distinto del de las tres preguntas.
 # --------------------------------------------------
-
-PASOS_CARGA = [
-    "Subir el Excel",
-    "Analizar el archivo",
-    "Limpiar los datos",
-    "Revisar columnas nuevas",
-    "Guardar en el histórico",
-]
 
 
 def mostrar_preparar_datos():

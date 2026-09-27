@@ -104,6 +104,137 @@ def selector_anio(anios, key):
     return anio
 
 
+
+# Pasos del flujo de carga (views/analizar_jornada.py). Se muestran
+# en "Preparar datos" y como guía arriba de la carga.
+PASOS_CARGA = [
+    "Subir el Excel",
+    "Analizar el archivo",
+    "Limpiar los datos",
+    "Revisar columnas nuevas",
+    "Guardar en el histórico",
+]
+
+
+# Tiempo entre que se enciende un paso y el siguiente (segundos).
+PAUSA_ANIMACION = 0.45
+
+
+def mostrar_pasos(destino, actual, terminado=False, animar_desde=None):
+
+    # actual: índice (desde 0) del paso en el que está la persona.
+    # El paso actual va resaltado en bordó; los anteriores con ✓.
+    # animar_desde: si viene, los pasos desde ese índice hasta el
+    # actual se "encienden" uno tras otro (se usa justo después de
+    # Analizar y de Guardar, una sola vez). Colores fijos: se leen
+    # en modo claro y oscuro.
+
+    marca = COLORES["light"]["marca"]
+
+    ultimo = len(PASOS_CARGA) if terminado else actual
+
+    items = []
+
+    for indice, paso in enumerate(PASOS_CARGA):
+
+        estilo = ""
+
+        if terminado or indice < actual:
+            clase, prefijo = "hecho", "✓"
+        elif indice == actual:
+            clase, prefijo = "actual", str(indice + 1)
+        else:
+            clase, prefijo = "pendiente", str(indice + 1)
+
+        if animar_desde is not None and animar_desde <= indice <= ultimo:
+
+            orden = indice - animar_desde
+
+            if clase == "hecho":
+                clase += " anim-listo"
+            elif clase == "actual":
+                clase += " anim-actual"
+
+            estilo = f' style="animation-delay:{orden * PAUSA_ANIMACION:.2f}s"'
+
+        items.append(
+            f'<li class="{clase}"{estilo}><span class="num">{prefijo}</span>'
+            f'<span class="nombre">{html.escape(paso)}</span></li>'
+        )
+
+    destino.markdown(
+        f"""
+        <style>
+        .pasos-carga {{
+            list-style: none;
+            margin: 0 0 0.5rem 0;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat({len(PASOS_CARGA)}, minmax(0, 1fr));
+            gap: 0.5rem;
+        }}
+        .pasos-carga li {{
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1px solid rgba(128, 128, 128, 0.3);
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.65rem;
+            font-size: 0.9rem;
+            line-height: 1.25;
+        }}
+        .pasos-carga .num {{
+            flex: none;
+            width: 1.4rem;
+            height: 1.4rem;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border: 1px solid currentColor;
+        }}
+        /* Paso hecho: círculo bordó con ✓ blanco; el nombre atenuado
+           para que no compita con el paso actual. */
+        .pasos-carga li.hecho .num {{
+            background: {marca};
+            border-color: {marca};
+            color: #ffffff;
+        }}
+        .pasos-carga li.hecho .nombre {{ opacity: 0.7; }}
+        .pasos-carga li.pendiente {{ opacity: 0.45; }}
+        .pasos-carga li.actual {{
+            background: {marca};
+            border-color: {marca};
+            color: #ffffff;
+            font-weight: 600;
+        }}
+        @keyframes paso-listo {{
+            0%   {{ opacity: 0.45; background: transparent; color: inherit; border-color: rgba(128, 128, 128, 0.3); }}
+            45%  {{ opacity: 1; background: {marca}; color: #ffffff; border-color: {marca}; }}
+            100% {{ opacity: 1; background: transparent; color: inherit; border-color: rgba(128, 128, 128, 0.3); }}
+        }}
+        @keyframes paso-actual {{
+            0%   {{ opacity: 0.45; background: transparent; color: inherit; border-color: rgba(128, 128, 128, 0.3); }}
+            100% {{ opacity: 1; background: {marca}; color: #ffffff; border-color: {marca}; }}
+        }}
+        .pasos-carga li.anim-listo {{ animation: paso-listo 0.9s ease both; }}
+        .pasos-carga li.anim-actual {{ animation: paso-actual 0.5s ease both; }}
+        @media (prefers-reduced-motion: reduce) {{
+            .pasos-carga li.anim-listo, .pasos-carga li.anim-actual {{ animation: none; }}
+        }}
+        @media (max-width: 640px) {{
+            .pasos-carga {{ grid-template-columns: minmax(0, 1fr); }}
+        }}
+        </style>
+        <ol class="pasos-carga" aria-label="Pasos de la carga">
+            {"".join(items)}
+        </ol>
+        """,
+        unsafe_allow_html=True
+    )
+
+
 # --------------------------------------------------
 # ERRORES AL LEER O ESCRIBIR EN LA BASE
 #

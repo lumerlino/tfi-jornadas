@@ -25,6 +25,15 @@ from utils.gestion_cargas import listar_cargas
 from utils.jornada_guardada import reconstruir_jornada
 from components.jornada.metadatos import mostrar_metadatos_jornada
 from views.dashboard_jornada import mostrar_dashboard_jornada
+from components.navegacion import ir_a
+from components.ui import PASOS_CARGA, mostrar_error, mostrar_pasos
+from utils.resumen_jornadas import de_cada_10, formatear_numero
+
+
+# El tablero completo del archivo (el dashboard anterior) queda
+# oculto: abrumaba al terminar la carga. El código sigue; para
+# volver a ofrecerlo alcanza con poner esto en True.
+MOSTRAR_TABLERO_COMPLETO = False
 
 
 def mostrar_analizar_jornada():
@@ -48,6 +57,11 @@ def mostrar_analizar_jornada():
             "Cargá un archivo Excel con los datos de una jornada "
             "para comenzar el análisis."
         )
+
+
+    # Guía de pasos: se reserva el lugar arriba y se completa más
+    # abajo, cuando ya se sabe en qué paso está la carga.
+    guia_pasos = st.empty()
 
 
     # --------------------------------------------------
@@ -132,7 +146,12 @@ def mostrar_analizar_jornada():
     # SI NO HAY DATOS, NO CONTINUAMOS
     # --------------------------------------------------
 
+    carga_excel = opcion == "📤 Cargar archivo Excel"
+
     if df is None:
+
+        if carga_excel:
+            mostrar_pasos(guia_pasos, 0)
 
         st.info(
             "Cargá un archivo Excel para comenzar el análisis."
@@ -151,6 +170,9 @@ def mostrar_analizar_jornada():
 
 
     if columnas_faltantes:
+
+        if carga_excel:
+            mostrar_pasos(guia_pasos, 1)
 
         st.error(
             "El archivo no tiene el formato esperado."
@@ -173,6 +195,9 @@ def mostrar_analizar_jornada():
     # --------------------------------------------------
 
     if not st.session_state["analisis_confirmado"]:
+
+        if carga_excel:
+            mostrar_pasos(guia_pasos, 1)
 
         if opcion == "📤 Cargar archivo Excel":
 
@@ -218,6 +243,12 @@ def mostrar_analizar_jornada():
                     st.session_state[
                         "editar_metadatos"
                     ] = False
+
+                    st.session_state.pop("carga_guardada", None)
+
+                    # En el próximo render los pasos 2 a 4 se
+                    # "encienden" en secuencia (ver mostrar_pasos).
+                    st.session_state["animar_pasos_desde"] = 1
 
                     st.rerun()
 
@@ -357,6 +388,15 @@ def mostrar_analizar_jornada():
         if columna not in configuraciones
     ]
 
+    # Limpiar (paso 3) es automático: si hay columnas nuevas, la
+    # persona está en el paso 4; si no, ya le toca guardar.
+    if carga_excel:
+        mostrar_pasos(
+            guia_pasos,
+            3 if pendientes else 4,
+            animar_desde=st.session_state.pop("animar_pasos_desde", None)
+        )
+
     if pendientes:
 
         st.markdown("### 🆕 Columnas nuevas detectadas")
@@ -401,21 +441,39 @@ def mostrar_analizar_jornada():
                         key=f"guardar_config_{columna}"
                     ):
 
-                        guardar_configuracion(
-                            columna,
-                            nombre_display,
-                            tipo,
-                            metrica
-                        )
+                        try:
 
-                        obtener_configuraciones.clear()
+                            guardar_configuracion(
+                                columna,
+                                nombre_display,
+                                tipo,
+                                metrica
+                            )
 
-                        st.rerun()
+                        except Exception as error:
+
+                            mostrar_error(error, "No se pudo guardar la configuración")
+
+                        else:
+
+                            obtener_configuraciones.clear()
+
+                            st.rerun()
 
 
     # --------------------------------------------------
-    # RESUMEN DE LOS DATOS GENERALES
+    # RESUMEN DE LA CARGA
+    #
+    # Al terminar la carga se muestra solo lo necesario para
+    # confirmar que el archivo está bien y guardarlo. El análisis
+    # (comparado con otros años) vive en "Cómo nos fue"; el tablero
+    # completo del archivo queda plegado al final.
     # --------------------------------------------------
+
+    st.success(
+        f"Listo: el archivo se leyó y se limpió sin problemas "
+        f"({formatear_numero(len(df))} registros)."
+    )
 
     if (
         opcion == "📤 Cargar archivo Excel"
@@ -428,9 +486,7 @@ def mostrar_analizar_jornada():
             ]
         )
 
-        st.markdown(
-            f"### Jornada {metadatos_guardados['anio']}"
-        )
+        st.subheader(f"Jornada {metadatos_guardados['anio']}")
 
         st.caption(
             f"{metadatos_guardados['fecha_inicio'].strftime('%d/%m/%Y')} "
@@ -438,6 +494,16 @@ def mostrar_analizar_jornada():
             f"{metadatos_guardados['fecha_fin'].strftime('%d/%m/%Y')}"
         )
 
+    else:
+
+        st.subheader("Resumen de los datos")
+
+    mostrar_resumen_carga(df)
+
+    if (
+        opcion == "📤 Cargar archivo Excel"
+        and st.session_state["metadatos_jornada"] is not None
+    ):
 
         col1, col2 = st.columns(
             [1, 1]
@@ -478,43 +544,104 @@ def mostrar_analizar_jornada():
                 use_container_width=True
             ):
 
-                resultado_carga = guardar_carga(
-                    df=df,
-                    metadatos=metadatos_guardados
-                )
+                try:
 
-                cargar_historico.clear()
-                listar_cargas.clear()
-                reconstruir_jornada.clear()
+                    resultado_carga = guardar_carga(
+                        df=df,
+                        metadatos=metadatos_guardados
+                    )
 
-                st.success(
-                    "Los datos se guardaron correctamente en el histórico."
-                )
+                except Exception as error:
 
-                st.caption(
-                    f"Carga N.º {resultado_carga['numero_carga']} "
-                    f"guardada para la jornada {metadatos_guardados['anio']}."
-                )
+                    resultado_carga = None
+                    error_guardado = error
 
-    st.divider()
+                if resultado_carga is not None:
+
+                    cargar_historico.clear()
+                    listar_cargas.clear()
+                    reconstruir_jornada.clear()
+
+                    # El aviso y el botón de "Cómo nos fue" tienen que
+                    # sobrevivir al rerun que dispara ese botón.
+                    st.session_state["carga_guardada"] = {
+                        "anio": metadatos_guardados["anio"],
+                        "numero_carga": resultado_carga["numero_carga"]
+                    }
+
+                    st.session_state["animar_pasos_desde"] = 4
+
+                else:
+
+                    st.session_state["error_guardado"] = error_guardado
+
+        # Fuera de las columnas, para que el aviso ocupe el ancho.
+        error_guardado = st.session_state.pop("error_guardado", None)
+
+        if error_guardado is not None:
+            mostrar_error(error_guardado, "No se pudo guardar la jornada en el histórico")
+
+        carga_guardada = st.session_state.get("carga_guardada")
+
+        if carga_guardada:
+
+            mostrar_pasos(
+                guia_pasos,
+                len(PASOS_CARGA),
+                terminado=True,
+                animar_desde=st.session_state.pop("animar_pasos_desde", None)
+            )
+
+            st.success(
+                f"Guardada en el histórico: jornada {carga_guardada['anio']}, "
+                f"carga N.º {carga_guardada['numero_carga']}."
+            )
+
+            ir_a("como_nos_fue", "Ver cómo nos fue →", principal=True)
 
 
     # --------------------------------------------------
-    # CONFIRMACIÓN DEL PROCESAMIENTO
+    # TABLERO COMPLETO DEL ARCHIVO (a pedido)
+    # Compartido con "Ver jornada" en Explorar en detalle,
+    # ver views/dashboard_jornada.py. Va con un toggle y no con un
+    # expander: el contenido de un expander se ejecuta aunque esté
+    # cerrado, y el tablero dibuja sus filtros en la barra lateral.
     # --------------------------------------------------
 
-    st.success(
-        f"Jornada procesada correctamente. "
-        f"Se encontraron {len(df)} registros."
-    )
+    if MOSTRAR_TABLERO_COMPLETO and st.toggle(
+        "Ver todos los gráficos de este archivo",
+        key="ver_tablero_completo",
+        help=(
+            "Es el análisis completo de este archivo por sí solo. Para "
+            "ver cómo nos fue comparado con otros años, guardá la "
+            "jornada y abrí «Cómo nos fue»."
+        )
+    ):
+
+        mostrar_dashboard_jornada(
+            df,
+            configuraciones
+        )
 
 
-    # --------------------------------------------------
-    # DASHBOARD (compartido con "Ver jornada" en Histórico,
-    # ver views/dashboard_jornada.py)
-    # --------------------------------------------------
+def mostrar_resumen_carga(df):
 
-    mostrar_dashboard_jornada(
-        df,
-        configuraciones
-    )
+    personas = df.dropna(subset=["documento"])
+
+    inscriptos = personas["documento"].nunique()
+    vinieron = personas[personas["asistio"].astype(bool)]["documento"].nunique()
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric("Se anotaron", formatear_numero(inscriptos), border=True)
+
+    with col2:
+        st.metric("Vinieron", formatear_numero(vinieron), border=True)
+
+    with col3:
+        st.metric(
+            "De cada 10 inscriptos",
+            f"{de_cada_10(vinieron, inscriptos)} vinieron",
+            border=True
+        )
