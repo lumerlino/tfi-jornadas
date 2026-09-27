@@ -80,3 +80,31 @@ def mostrar_hallazgos(lista):
             """,
             unsafe_allow_html=True
         )
+
+
+def selector_anio(anios, key):
+
+    # Las pantallas comparten el año elegido: el widget de cada una
+    # se borra al cambiar de página, así que el valor vive aparte.
+
+    opciones = sorted(anios, reverse=True)
+
+    guardado = st.session_state.get("anio_elegido")
+
+    anio = st.selectbox(
+        "Ver otra jornada",
+        opciones,
+        index=opciones.index(guardado) if guardado in opciones else 0,
+        key=key
+    )
+
+    st.session_state["anio_elegido"] = anio
+
+    return anio
+
+
+def ir_a(pagina, texto):
+
+    if st.button(texto, key=f"ir_a_{pagina}"):
+        st.session_state["pagina"] = pagina
+        st.rerun()

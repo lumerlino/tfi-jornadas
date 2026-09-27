@@ -305,3 +305,197 @@ def hallazgos(df_historico, anio):
     ]
 
     return [h for h in resultado if h is not None]
+
+
+# --------------------------------------------------
+# "QUÉ CAMBIÓ"
+# --------------------------------------------------
+
+
+def titular_cambios(df_historico, anio_anterior, anio):
+
+    cambios = cambios_por_grupo(df_historico, anio_anterior, anio)
+
+    if cambios.empty:
+        return f"No hay datos de rol para comparar con {anio_anterior}."
+
+    caida = cambios.iloc[0]
+    suba = cambios.iloc[-1]
+
+    grupo_caida = cambios.index[0]
+    grupo_suba = cambios.index[-1]
+
+    bajo = caida["diferencia"] <= -CAMBIO_MINIMO_GRUPO
+    subio = suba["diferencia"] >= CAMBIO_MINIMO_GRUPO
+
+    if bajo and subio:
+        return (
+            f"Frente a {anio_anterior}, vinieron {personas(-caida['diferencia'])} "
+            f"menos del grupo {grupo_caida} y "
+            f"{formatear_numero(suba['diferencia'])} más de {grupo_suba}."
+        )
+
+    if bajo:
+        return (
+            f"Frente a {anio_anterior}, el grupo que más bajó fue "
+            f"{grupo_caida} ({personas(-caida['diferencia'])} menos)."
+        )
+
+    if subio:
+        return (
+            f"Frente a {anio_anterior}, ningún grupo bajó; el que más creció "
+            f"fue {grupo_suba} ({personas(suba['diferencia'])} más)."
+        )
+
+    return (
+        f"Frente a {anio_anterior}, todos los grupos vinieron en cantidades "
+        f"parecidas."
+    )
+
+
+def accion_sugerida(df_historico, anio_anterior, anio):
+
+    cambios = cambios_por_grupo(df_historico, anio_anterior, anio)
+
+    if cambios.empty:
+        return None
+
+    if cambios.iloc[0]["diferencia"] <= -CAMBIO_MINIMO_GRUPO:
+        return (
+            f"Podemos reforzar la convocatoria al grupo {cambios.index[0]} "
+            f"para la próxima jornada."
+        )
+
+    if cambios.iloc[-1]["diferencia"] >= CAMBIO_MINIMO_GRUPO:
+        return (
+            f"Lo que hicimos con el grupo {cambios.index[-1]} funcionó: "
+            f"conviene repetirlo."
+        )
+
+    return None
+
+
+# Carrera: la completan personas vinculadas a investigación, de
+# cualquier rol. "Otro" + texto libre se agrupa en "Otras áreas"
+# (suelen ser áreas o secretarías, no carreras).
+COLUMNA_CARRERA = "Investigador Carreras"
+OTRAS_AREAS = "Otras áreas"
+
+
+def _carrera_normalizada(serie):
+
+    texto = serie.astype("string").str.strip()
+
+    texto = texto.mask(texto.isin(["", "nan", "None", "<NA>"]))
+
+    # Sin el fillna, la comparación con un vacío da <NA> y mask lo
+    # toma como verdadero: los vacíos terminarían en "Otras áreas".
+    es_otro = (texto.str.lower() == "otro").fillna(False).astype(bool)
+
+    return texto.mask(es_otro, OTRAS_AREAS)
+
+
+def roles_con_carrera(df_historico, anio):
+
+    if COLUMNA_CARRERA not in df_historico.columns:
+        return []
+
+    asistentes = df_historico[
+        df_historico["asistio"].astype(bool)
+        & (df_historico["anio"] == anio)
+    ].copy()
+
+    asistentes["carrera"] = _carrera_normalizada(asistentes[COLUMNA_CARRERA])
+
+    conteo = (
+        asistentes.dropna(subset=["carrera", "Rol principal"])
+        .groupby("Rol principal")["documento"]
+        .nunique()
+        .sort_values(ascending=False)
+    )
+
+    return conteo.index.tolist()
+
+
+def carreras_por_rol(df_historico, anio_anterior, anio, rol):
+
+    asistentes = df_historico[
+        df_historico["asistio"].astype(bool)
+        & df_historico["anio"].isin([anio_anterior, anio])
+        & (df_historico["Rol principal"] == rol)
+    ].dropna(subset=["documento"]).copy()
+
+    asistentes["carrera"] = _carrera_normalizada(asistentes[COLUMNA_CARRERA])
+
+    total = asistentes[asistentes["anio"] == anio]["documento"].nunique()
+
+    sin_carrera = (
+        asistentes[
+            (asistentes["anio"] == anio) & asistentes["carrera"].isna()
+        ]["documento"].nunique()
+    )
+
+    tabla = (
+        asistentes.dropna(subset=["carrera"])
+        .groupby(["carrera", "anio"])["documento"]
+        .nunique()
+        .unstack(fill_value=0)
+        .reindex(columns=[anio_anterior, anio], fill_value=0)
+    )
+
+    tabla = tabla[tabla[anio] > 0].copy()
+
+    tabla["diferencia"] = tabla[anio] - tabla[anio_anterior]
+
+    return tabla.sort_values(anio, ascending=False), total, sin_carrera
+
+
+def titular_carreras(tabla, total, sin_carrera, rol, anio_anterior, cambio_minimo=3):
+
+    if tabla.empty:
+        return f"Nadie del grupo {rol} indicó carrera."
+
+    anio = tabla.columns[1]
+
+    principal = tabla.index[0]
+    cantidad_principal = formatear_numero(tabla.iloc[0][anio])
+
+    if sin_carrera > 0:
+        texto = (
+            f"De las {personas(total)} del grupo {rol} que vinieron, "
+            f"{formatear_numero(total - sin_carrera)} indicaron carrera; la "
+            f"más frecuente es {principal} ({cantidad_principal})."
+        )
+    else:
+        texto = (
+            f"De las {personas(total)} del grupo {rol} que vinieron, la "
+            f"carrera más frecuente es {principal} ({cantidad_principal})."
+        )
+
+    caida = tabla.sort_values("diferencia").iloc[0]
+
+    if caida["diferencia"] <= -cambio_minimo:
+        texto += (
+            f" La que más bajó fue {caida.name} "
+            f"({formatear_numero(-caida['diferencia'])} menos que en "
+            f"{anio_anterior})."
+        )
+
+    return texto
+
+
+def reencuentro(df_historico, anio_anterior, anio):
+
+    resumen = resumen_anual(df_historico).set_index("anio")
+
+    vinieron_antes = int(resumen.loc[anio_anterior, "vinieron"])
+    vinieron = int(resumen.loc[anio, "vinieron"])
+
+    cantidad, porcentaje = volvieron(df_historico, anio_anterior, anio)
+
+    return (
+        f"De las {personas(vinieron_antes)} que vinieron en {anio_anterior}, "
+        f"{formatear_numero(cantidad)} volvieron en {anio} "
+        f"({porcentaje:.0f} %). Las otras {personas(vinieron - cantidad)} de "
+        f"{anio} no habían venido en {anio_anterior}."
+    )

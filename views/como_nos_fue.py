@@ -1,7 +1,7 @@
 import plotly.graph_objects as go
 import streamlit as st
 
-from components.ui import mostrar_hallazgos
+from components.ui import ir_a, mostrar_hallazgos, selector_anio
 from utils.historico_datos import cargar_historico
 from utils.resumen_jornadas import (
     de_cada_10,
@@ -69,11 +69,7 @@ def mostrar_como_nos_fue():
 
     with col_anio:
 
-        anio = st.selectbox(
-            "Ver otra jornada",
-            sorted(anios, reverse=True),
-            key="como_nos_fue_anio"
-        )
+        anio = selector_anio(anios, key="como_nos_fue_anio")
 
     posicion = anios.index(anio)
     fila = resumen.iloc[posicion]
@@ -106,6 +102,8 @@ def mostrar_como_nos_fue():
         st.subheader("Lo más importante")
 
         mostrar_hallazgos(hallazgos(df_historico, anio))
+
+        ir_a("🔍 Qué cambió", "Ver qué cambió →")
 
     # --------------------------------------------------
     # NIVEL 2: GRÁFICO A
