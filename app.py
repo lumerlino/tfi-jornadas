@@ -2,6 +2,7 @@ import streamlit as st
 
 from views.como_nos_fue import mostrar_como_nos_fue
 from views.que_cambio import mostrar_que_cambio
+from views.proxima_jornada import mostrar_proxima_jornada
 from views.analizar_jornada import mostrar_analizar_jornada
 from views.historico import mostrar_historico
 from views.configuracion_columnas import mostrar_configuracion_columnas
@@ -23,6 +24,7 @@ st.set_page_config(
 opciones = [
     "🏠 Cómo nos fue",
     "🔍 Qué cambió",
+    "🎯 Nuestra próxima jornada",
     "📤 Analizar jornada",
     "📊 Histórico",
     "⚙️ Configuración",
@@ -91,6 +93,11 @@ if pagina == "🏠 Cómo nos fue":
 elif pagina == "🔍 Qué cambió":
 
     mostrar_que_cambio()
+
+
+elif pagina == "🎯 Nuestra próxima jornada":
+
+    mostrar_proxima_jornada()
 
 
 elif pagina == "📤 Analizar jornada":

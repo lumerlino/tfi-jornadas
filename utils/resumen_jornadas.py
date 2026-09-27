@@ -499,3 +499,148 @@ def reencuentro(df_historico, anio_anterior, anio):
         f"({porcentaje:.0f} %). Las otras {personas(vinieron - cantidad)} de "
         f"{anio} no habían venido en {anio_anterior}."
     )
+
+
+# --------------------------------------------------
+# "NUESTRA PRÓXIMA JORNADA"
+# --------------------------------------------------
+
+
+def estimacion(resumen):
+
+    # Misma regresión que el resto de la app (utils/proyecciones.py),
+    # sobre las personas que vinieron cada año.
+    return calcular_tendencia(
+        resumen.rename(columns={"vinieron": "asistio"})[["anio", "asistio"]]
+    )
+
+
+def redondear_a_10(numero):
+
+    return int(round(numero / 10) * 10)
+
+
+def titular_meta(tendencia, meta, anio, vinieron):
+
+    if not tendencia["suficiente"]:
+
+        faltan = tendencia["anios_necesarios"] - tendencia["anios_disponibles"]
+
+        return (
+            "Todavía no hay suficientes ediciones para estimar hacia dónde "
+            f"vamos (falta{'' if faltan == 1 else 'n'} {faltan}). Para "
+            f"superar {anio} necesitamos más de {personas(vinieron)}."
+        )
+
+    proyeccion = redondear_a_10(tendencia["proyeccion"])
+    diferencia = proyeccion - meta
+
+    if diferencia > 0:
+        return (
+            f"Si seguimos como hasta ahora, vendrían unas "
+            f"{formatear_numero(proyeccion)} personas: superaríamos la meta "
+            f"por {formatear_numero(diferencia)}."
+        )
+
+    if diferencia == 0:
+        return (
+            f"Si seguimos como hasta ahora, vendrían unas "
+            f"{formatear_numero(proyeccion)} personas: justo la meta, sin "
+            f"margen."
+        )
+
+    return (
+        f"Si seguimos como hasta ahora, vendrían unas "
+        f"{formatear_numero(proyeccion)} personas: nos quedaríamos "
+        f"{formatear_numero(-diferencia)} abajo de la meta."
+    )
+
+
+def aprendizajes(df_historico):
+
+    resumen = resumen_anual(df_historico)
+
+    if len(resumen) < 2:
+        return []
+
+    ultima = resumen.iloc[-1]
+    anio = int(ultima["anio"])
+
+    resultado = []
+
+    # 1. La mejor jornada y qué grupo venía más ese año
+    mejor = resumen.loc[resumen["vinieron"].idxmax()]
+    anio_mejor = int(mejor["anio"])
+
+    if anio_mejor == anio:
+
+        resultado.append(
+            f"{anio} fue nuestra mejor jornada hasta ahora, con "
+            f"{personas(ultima['vinieron'])}."
+        )
+
+    else:
+
+        texto = (
+            f"Nuestra mejor jornada fue {anio_mejor} "
+            f"({personas(mejor['vinieron'])})."
+        )
+
+        cambios = cambios_por_grupo(df_historico, anio_mejor, anio)
+
+        if not cambios.empty and cambios.iloc[0]["diferencia"] <= -CAMBIO_MINIMO_GRUPO:
+            texto += (
+                f" Ese año vinieron {personas(-cambios.iloc[0]['diferencia'])} "
+                f"más del grupo {cambios.index[0]} que en {anio}."
+            )
+
+        resultado.append(texto)
+
+    # 2. Grupos que crecieron en todas las ediciones
+    if len(resumen) >= 3:
+
+        asistentes = df_historico[df_historico["asistio"].astype(bool)]
+
+        por_grupo = (
+            asistentes.dropna(subset=["documento", "Rol principal"])
+            .groupby(["Rol principal", "anio"])["documento"]
+            .nunique()
+            .unstack(fill_value=0)
+            .reindex(columns=resumen["anio"].tolist(), fill_value=0)
+        )
+
+        crecientes = [
+            grupo
+            for grupo, fila in por_grupo.iterrows()
+            if fila.iloc[0] > 0 and fila.diff().iloc[1:].gt(0).all()
+        ]
+
+        if crecientes:
+            resultado.append(
+                f"El grupo {crecientes[0]} creció en todas las ediciones: lo "
+                f"que hacemos con ese grupo funciona."
+            )
+
+    # 3. La proporción de inscriptos que viene
+    proporciones = resumen["vinieron"] / resumen["inscriptos"].where(resumen["inscriptos"] > 0)
+
+    mejor_proporcion = proporciones.idxmax()
+    fila_proporcion = resumen.loc[mejor_proporcion]
+
+    # Se compara lo que la persona ve ("6 de cada 10"), no la tasa
+    # exacta: si redondeadas son iguales, la frase se contradiría.
+    de_10_mejor = de_cada_10(fila_proporcion["vinieron"], fila_proporcion["inscriptos"])
+    de_10_ultima = de_cada_10(ultima["vinieron"], ultima["inscriptos"])
+
+    if de_10_mejor > de_10_ultima:
+
+        estimados = redondear_a_10(ultima["inscriptos"] * proporciones[mejor_proporcion])
+
+        resultado.append(
+            f"En {int(fila_proporcion['anio'])} venían {de_10_mejor} de cada "
+            f"10 inscriptos; en {anio}, {de_10_ultima}. Si "
+            f"recuperamos eso, con la misma cantidad de inscriptos vendrían "
+            f"unas {formatear_numero(estimados)} personas."
+        )
+
+    return resultado

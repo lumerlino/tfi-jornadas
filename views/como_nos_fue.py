@@ -103,7 +103,13 @@ def mostrar_como_nos_fue():
 
         mostrar_hallazgos(hallazgos(df_historico, anio))
 
-        ir_a("🔍 Qué cambió", "Ver qué cambió →")
+        col_cambio, col_proxima, _ = st.columns([1, 1, 2])
+
+        with col_cambio:
+            ir_a("🔍 Qué cambió", "Ver qué cambió →")
+
+        with col_proxima:
+            ir_a("🎯 Nuestra próxima jornada", "Ver próxima jornada →")
 
     # --------------------------------------------------
     # NIVEL 2: GRÁFICO A
