@@ -5,6 +5,7 @@ from views.analizar_jornada import mostrar_analizar_jornada
 from views.historico import mostrar_historico
 from views.configuracion_columnas import mostrar_configuracion_columnas
 from views.gestion_cargas import mostrar_gestion_cargas
+from utils.tema import mostrar_encabezado
 
 
 st.set_page_config(
@@ -76,6 +77,8 @@ if (
 # --------------------------------------------------
 
 pagina = st.session_state["pagina"]
+
+mostrar_encabezado()
 
 
 if pagina == "🏠 Inicio":

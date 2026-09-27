@@ -1,0 +1,41 @@
+# --------------------------------------------------
+# TEMA VISUAL (paleta "UNLa")
+#
+# Colores tomados del logo institucional (bordó y blanco) para la
+# marca; los datos van en grafito y el color solo aparece con
+# significado: naranja = bajó, azul = subió. La familia roja queda
+# reservada para la marca, por eso redColor/greenColor de Streamlit
+# (que usan st.metric, st.error, st.success) se remapean a
+# naranja/azul. Valores y verificaciones de contraste/daltonismo
+# documentados en el TFI (sección "Diseño de la interfaz: paleta de
+# colores"). Los mismos colores, para Plotly, viven en utils/tema.py.
+# --------------------------------------------------
+
+[theme]
+baseRadius = "0.5rem"
+showSidebarBorder = true
+
+[theme.light]
+primaryColor = "#7e0000"
+backgroundColor = "#fdf9f8"
+secondaryBackgroundColor = "#f5eeed"
+textColor = "#0b0b0b"
+borderColor = "#e3dcdb"
+redColor = "#c2410c"
+greenColor = "#256abf"
+blueColor = "#256abf"
+yellowColor = "#fab219"
+
+[theme.dark]
+# En oscuro el bordó del logo (#7e0000) casi no se ve sobre el fondo
+# (1,6:1); este es un bordó apenas más claro para radios y checkboxes
+# que sigue lejos del naranja de "bajó".
+primaryColor = "#a12628"
+backgroundColor = "#1b1918"
+secondaryBackgroundColor = "#242120"
+textColor = "#ffffff"
+borderColor = "#363231"
+redColor = "#d95926"
+greenColor = "#3987e5"
+blueColor = "#3987e5"
+yellowColor = "#fab219"

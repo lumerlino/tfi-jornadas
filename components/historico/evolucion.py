@@ -1,6 +1,8 @@
 import streamlit as st
 import plotly.express as px
 
+from utils.tema import colores, estilo_figura
+
 
 def mostrar_evolucion_historica(df_historico):
 
@@ -61,14 +63,19 @@ def mostrar_evolucion_historica(df_historico):
     # GRÁFICO
     # --------------------------------------------------
 
+    c = colores()
+
     fig_evolucion = px.line(
         resumen_largo,
         x="anio",
         y="cantidad",
         color="indicador",
         markers=True,
-        text="cantidad"
+        text="cantidad",
+        color_discrete_sequence=[c["datos"], c["datos_2"]]
     )
+
+    estilo_figura(fig_evolucion)
 
 
     fig_evolucion.update_traces(
