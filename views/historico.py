@@ -1,5 +1,7 @@
 import streamlit as st
 
+from components.ui import mostrar_error
+
 from utils.historico_datos import cargar_historico
 from utils.gestion_cargas import listar_cargas
 from utils.jornada_guardada import reconstruir_jornada
@@ -223,9 +225,20 @@ def mostrar_historico():
 
             carga_id_elegida = opciones_carga[seleccion]
 
-            df_jornada = reconstruir_jornada(carga_id_elegida)
+            try:
 
-            if df_jornada.empty:
+                df_jornada = reconstruir_jornada(carga_id_elegida)
+
+            except Exception as error:
+
+                mostrar_error(error, "No se pudo abrir la jornada guardada")
+                df_jornada = None
+
+            if df_jornada is None:
+
+                pass
+
+            elif df_jornada.empty:
 
                 st.warning(
                     "Esta carga no tiene participaciones guardadas."

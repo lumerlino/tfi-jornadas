@@ -1,5 +1,7 @@
 import streamlit as st
 
+from components.ui import mostrar_error
+
 from utils.clasificacion_columnas import METRICAS_POR_TIPO
 from utils.configuracion_columnas import (
     obtener_configuraciones,
@@ -124,17 +126,25 @@ def mostrar_configuracion_columnas():
                     use_container_width=True
                 ):
 
-                    guardar_configuracion(
-                        columna_excel,
-                        nombre_display,
-                        configuracion["tipo_dato"],
-                        metrica
-                    )
+                    try:
 
-                    obtener_configuraciones.clear()
+                        guardar_configuracion(
+                            columna_excel,
+                            nombre_display,
+                            configuracion["tipo_dato"],
+                            metrica
+                        )
 
-                    st.success("Configuración actualizada.")
-                    st.rerun()
+                    except Exception as error:
+
+                        mostrar_error(error, "No se pudo guardar la configuración")
+
+                    else:
+
+                        obtener_configuraciones.clear()
+
+                        st.success("Configuración actualizada.")
+                        st.rerun()
 
             with col2:
 
@@ -150,13 +160,21 @@ def mostrar_configuracion_columnas():
                     use_container_width=True
                 ):
 
-                    eliminar_configuracion(columna_excel)
+                    try:
 
-                    obtener_configuraciones.clear()
+                        eliminar_configuracion(columna_excel)
 
-                    st.success(
-                        "Configuración eliminada. La columna va a "
-                        "volver a aparecer como pendiente la próxima "
-                        "vez que se analice una jornada que la traiga."
-                    )
-                    st.rerun()
+                    except Exception as error:
+
+                        mostrar_error(error, "No se pudo eliminar la configuración")
+
+                    else:
+
+                        obtener_configuraciones.clear()
+
+                        st.success(
+                            "Configuración eliminada. La columna va a "
+                            "volver a aparecer como pendiente la próxima "
+                            "vez que se analice una jornada que la traiga."
+                        )
+                        st.rerun()

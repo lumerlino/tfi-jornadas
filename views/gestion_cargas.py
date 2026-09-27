@@ -1,5 +1,7 @@
 import streamlit as st
 
+from components.ui import mostrar_error
+
 from utils.gestion_cargas import (
     listar_cargas,
     eliminar_carga,
@@ -188,14 +190,22 @@ def mostrar_gestion_cargas():
                 type="primary"
             ):
 
-                eliminar_carga(carga["carga_id"])
+                try:
 
-                cargar_historico.clear()
-                listar_cargas.clear()
-                reconstruir_jornada.clear()
+                    eliminar_carga(carga["carga_id"])
 
-                st.success(
-                    f"Carga N.º {carga['numero_carga']} de la "
-                    f"jornada {carga['anio']} eliminada."
-                )
-                st.rerun()
+                except Exception as error:
+
+                    mostrar_error(error, "No se pudo eliminar la carga")
+
+                else:
+
+                    cargar_historico.clear()
+                    listar_cargas.clear()
+                    reconstruir_jornada.clear()
+
+                    st.success(
+                        f"Carga N.º {carga['numero_carga']} de la "
+                        f"jornada {carga['anio']} eliminada."
+                    )
+                    st.rerun()

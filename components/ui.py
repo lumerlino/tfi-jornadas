@@ -1,4 +1,5 @@
 import html
+import traceback
 
 import streamlit as st
 
@@ -102,3 +103,41 @@ def selector_anio(anios, key):
 
     return anio
 
+
+# --------------------------------------------------
+# ERRORES AL LEER O ESCRIBIR EN LA BASE
+#
+# Un aviso de una línea; el tipo de error y el traceback quedan
+# plegados en "Detalle técnico" para quien tenga que diagnosticar.
+# --------------------------------------------------
+
+
+def es_error_de_conexion(error):
+
+    try:
+        import httpx
+    except ImportError:
+        return False
+
+    return isinstance(error, (httpx.TransportError, httpx.TimeoutException))
+
+
+def mostrar_error(error, que_fallo):
+
+    if es_error_de_conexion(error):
+        st.error(
+            f"{que_fallo}: no hay conexión con la base de datos. "
+            "Probá de nuevo en unos minutos."
+        )
+    else:
+        st.error(
+            f"{que_fallo}. Si vuelve a pasar, el detalle técnico "
+            "ayuda a encontrar la causa."
+        )
+
+    with st.expander("Detalle técnico"):
+        st.caption(f"{type(error).__name__}: {error}")
+        st.code(
+            "".join(traceback.format_exception(error)),
+            language=None
+        )
