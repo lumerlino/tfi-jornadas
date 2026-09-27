@@ -12,7 +12,7 @@ from utils.jornada_guardada import reconstruir_jornada
 
 def mostrar_gestion_cargas():
 
-    st.title("Gestionar cargas")
+    st.title("Jornadas guardadas")
 
     st.write(
         "Acá se pueden ver y borrar las cargas guardadas en el "

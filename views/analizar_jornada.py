@@ -29,7 +29,7 @@ from views.dashboard_jornada import mostrar_dashboard_jornada
 
 def mostrar_analizar_jornada():
 
-    st.title("Analizar jornada")
+    st.title("Cargar jornada nueva")
 
     demo_habilitado = (
         os.getenv("HABILITAR_DEMO", "false").lower() == "true"
@@ -341,7 +341,7 @@ def mostrar_analizar_jornada():
         st.warning(
             "No se pudo conectar con la base de configuración de "
             "columnas. Se están usando los filtros por default — si "
-            "personalizaste algo en ⚙️ Configuración, esos cambios no "
+            "personalizaste algo en «Columnas del formulario», esos cambios no "
             "se van a reflejar hasta que vuelva la conexión. Tampoco "
             "van a aparecer columnas nuevas para configurar por ahora."
         )

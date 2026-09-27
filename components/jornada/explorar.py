@@ -153,7 +153,7 @@ def mostrar_explorar(df, configuraciones):
             "No hay ninguna columna configurada con un gráfico "
             "activo todavía (ni de las oficiales ni de las nuevas). "
             "Se configuran desde 'Columnas nuevas detectadas' más "
-            "arriba, o se editan en la página ⚙️ Configuración."
+            "arriba, o se editan en «Columnas del formulario»."
         )
 
         return

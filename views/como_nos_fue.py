@@ -1,7 +1,8 @@
 import plotly.graph_objects as go
 import streamlit as st
 
-from components.ui import ir_a, mostrar_hallazgos, selector_anio
+from components.navegacion import ir_a
+from components.ui import mostrar_hallazgos, selector_anio
 from utils.historico_datos import cargar_historico
 from utils.resumen_jornadas import (
     de_cada_10,
@@ -52,9 +53,7 @@ def mostrar_como_nos_fue():
             "primera, acá vamos a ver cómo nos fue."
         )
 
-        if st.button("Cargar una jornada"):
-            st.session_state["pagina"] = "📤 Analizar jornada"
-            st.rerun()
+        ir_a("cargar_jornada", "Cargar una jornada")
 
         return
 
@@ -106,10 +105,10 @@ def mostrar_como_nos_fue():
         col_cambio, col_proxima, _ = st.columns([1, 1, 2])
 
         with col_cambio:
-            ir_a("🔍 Qué cambió", "Ver qué cambió →")
+            ir_a("que_cambio", "Ver qué cambió →")
 
         with col_proxima:
-            ir_a("🎯 Nuestra próxima jornada", "Ver próxima jornada →")
+            ir_a("proxima_jornada", "Ver próxima jornada →")
 
     # --------------------------------------------------
     # NIVEL 2: GRÁFICO A

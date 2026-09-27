@@ -102,9 +102,3 @@ def selector_anio(anios, key):
 
     return anio
 
-
-def ir_a(pagina, texto):
-
-    if st.button(texto, key=f"ir_a_{pagina}"):
-        st.session_state["pagina"] = pagina
-        st.rerun()

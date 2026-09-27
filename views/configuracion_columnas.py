@@ -12,12 +12,12 @@ from components.jornada.explorar import renderizar_metrica
 
 def mostrar_configuracion_columnas():
 
-    st.title("Configuración de columnas")
+    st.title("Columnas del formulario")
 
     st.write(
         "Acá se pueden editar o eliminar las configuraciones de "
         "columnas que la app no conoce de entrada (ver la sección "
-        "'Columnas nuevas detectadas' en Analizar jornada)."
+        "'Columnas nuevas detectadas' en «Cargar jornada nueva»)."
     )
 
     try:

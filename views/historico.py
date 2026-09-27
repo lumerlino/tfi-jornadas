@@ -21,7 +21,7 @@ from views.dashboard_jornada import mostrar_dashboard_jornada
 
 def mostrar_historico():
 
-    st.title("Histórico de Jornadas")
+    st.title("Explorar en detalle")
 
     try:
 
