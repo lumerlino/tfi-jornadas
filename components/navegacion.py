@@ -53,6 +53,10 @@ SECCIONES_MENU = [
 
 TAREAS = ["cargar_jornada", "jornadas_guardadas", "columnas", "explorar"]
 
+# Nombres cortos para el menú, así cada ítem entra en una línea y
+# todos tienen la misma altura. La página conserva su título completo.
+NOMBRES_MENU = {"columnas": "Columnas"}
+
 # Texto del menú sobre el bordó oscuro (utils/tema.py, MENU_FONDO).
 TEXTO_MENU = "#f5dcdc"
 TEXTO_ROTULO = "#e0a9a9"
@@ -85,7 +89,10 @@ def mostrar_menu(pagina):
         if en_datos:
             for clave in TAREAS:
                 with st.container(key=f"menu_tarea_{clave}"):
-                    st.page_link(PAGINAS[clave])
+                    st.page_link(
+                        PAGINAS[clave],
+                        label=NOMBRES_MENU.get(clave, PAGINAS[clave].title)
+                    )
 
     activo = f"menu_tarea_{actual}" if actual in TAREAS else f"menu_{actual}"
 
@@ -95,7 +102,13 @@ def mostrar_menu(pagina):
         [data-testid="stSidebarUserContent"] [data-testid="stVerticalBlock"] {{
             gap: 0.15rem;
         }}
+        [class*="st-key-menu_"] [data-testid="stElementContainer"] {{
+            margin: 0;
+        }}
         [class*="st-key-menu_"] a {{
+            margin: 0;
+            height: 2.1rem;
+            align-items: center;
             border-left: 3px solid transparent;
             border-radius: 0 0.5rem 0.5rem 0;
         }}
@@ -105,6 +118,12 @@ def mostrar_menu(pagina):
         [data-testid="stSidebar"] a p,
         [data-testid="stSidebar"] a span {{
             color: {TEXTO_MENU} !important;
+        }}
+        [data-testid="stSidebar"] a p {{
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }}
         [data-testid="stSidebar"] a:hover {{
             background: rgba(255, 255, 255, 0.08);
@@ -118,7 +137,6 @@ def mostrar_menu(pagina):
             padding-left: 1.4rem;
         }}
         [class*="st-key-menu_tarea_"] a p {{
-            white-space: normal;
             font-size: 0.9rem;
         }}
         .st-key-{activo} a {{
