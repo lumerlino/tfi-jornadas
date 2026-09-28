@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="40" viewBox="0 0 200 40" role="img" aria-label="Jornadas de Investigaci&#243;n, Universidad Nacional de Lan&#250;s">
+  <!-- Logo provisorio en texto (blanco, para la barra bordo). Reemplazar
+       por el logo oficial de la universidad cuando este disponible.
+       Acentos como entidades XML: Streamlit no sirve el SVG como UTF-8.
+       Solo fuentes del sistema: una imagen SVG no ve las fuentes web. -->
+  <text x="0" y="18" fill="#ffffff" font-family="'Segoe UI', Arial, Helvetica, sans-serif" font-size="16" font-weight="700" textLength="196" lengthAdjust="spacingAndGlyphs">Jornadas de Investigaci&#243;n</text>
+  <text x="0" y="35" fill="#ffffff" fill-opacity="0.82" font-family="'Segoe UI', Arial, Helvetica, sans-serif" font-size="12">Universidad Nacional de Lan&#250;s</text>
+</svg>

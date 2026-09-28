@@ -9,7 +9,7 @@ from views.historico import mostrar_historico
 from views.configuracion_columnas import mostrar_configuracion_columnas
 from views.gestion_cargas import mostrar_gestion_cargas
 from views.preparar_datos import mostrar_preparar_datos
-from utils.tema import mostrar_encabezado
+from utils.tema import mostrar_marco
 
 
 st.set_page_config(
@@ -111,7 +111,7 @@ with st.sidebar:
 # CONTENIDO
 # --------------------------------------------------
 
-mostrar_encabezado()
+mostrar_marco()
 
 if tarea_actual:
     st.page_link(PAGINAS["preparar_datos"], label="Volver a Preparar datos", icon=":material/arrow_back:")

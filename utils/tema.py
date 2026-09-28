@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import streamlit as st
 
 
@@ -106,41 +108,48 @@ def estilo_figura(fig):
     return fig
 
 
-def mostrar_encabezado():
+LOGO = Path(__file__).resolve().parent.parent / "assets" / "logo_jornadas.svg"
 
-    # Franja bordó con el nombre de la app, arriba del contenido.
-    # Cuando haya un archivo del logo en el repo, se puede sumar
-    # con st.logo() en la barra lateral.
+# Alto de la barra de Streamlit (header) en 1.51. La parte de arriba
+# del menú lateral se pinta a la misma altura para que se lean como
+# una sola barra de lado a lado.
+ALTO_BARRA = "60px"
+
+
+def mostrar_marco():
+
+    # Identidad de la app: barra bordó continua arriba (barra de
+    # Streamlit + parte superior del menú) con el nombre como logo.
+    # Depende de data-testid internos (stHeader, stSidebar): si una
+    # versión futura los cambia, la barra vuelve a verse neutra y el
+    # logo sigue en el menú; no se rompe nada.
+
+    st.logo(str(LOGO), size="large")
 
     marca = COLORES["light"]["marca"]
 
     st.markdown(
         f"""
         <style>
-        .encabezado-unla {{
+        header[data-testid="stHeader"] {{
             background: {marca};
+        }}
+        header[data-testid="stHeader"] button,
+        header[data-testid="stHeader"] [data-testid="stMainMenu"] {{
             color: #ffffff;
-            border-radius: 0.5rem;
-            padding: 0.6rem 1rem;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: baseline;
-            gap: 0.75rem;
-            flex-wrap: wrap;
         }}
-        .encabezado-unla .titulo {{
-            font-weight: 600;
-            font-size: 1.05rem;
+        [data-testid="stSidebar"] {{
+            background-image: linear-gradient(
+                to bottom,
+                {marca} 0,
+                {marca} {ALTO_BARRA},
+                transparent {ALTO_BARRA}
+            );
         }}
-        .encabezado-unla .sub {{
-            font-size: 0.85rem;
-            opacity: 0.85;
+        [data-testid="stSidebarHeader"] button {{
+            color: #ffffff;
         }}
         </style>
-        <div class="encabezado-unla">
-            <span class="titulo">Jornadas de Investigación</span>
-            <span class="sub">Departamento de Desarrollo Productivo y Tecnológico · UNLa</span>
-        </div>
         """,
         unsafe_allow_html=True
     )
