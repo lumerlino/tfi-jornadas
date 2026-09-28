@@ -3,6 +3,7 @@ import streamlit as st
 
 from components.navegacion import ir_a
 from components.ui import mostrar_hallazgos, selector_anio
+from utils.grupos_categorias import agregar_grupos
 from utils.historico_datos import cargar_historico
 from utils.resumen_jornadas import (
     de_cada_10,
@@ -27,7 +28,7 @@ def mostrar_como_nos_fue():
 
     try:
 
-        df_historico = cargar_historico()
+        df_historico = agregar_grupos(cargar_historico())
 
     except Exception as error:
 

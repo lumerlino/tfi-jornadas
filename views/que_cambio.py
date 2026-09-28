@@ -2,6 +2,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from components.ui import selector_anio
+from utils.grupos_categorias import agregar_grupos, cambios_de_definicion
 from utils.historico_datos import cargar_historico
 from utils.resumen_jornadas import (
     accion_sugerida,
@@ -42,7 +43,7 @@ def mostrar_que_cambio():
 
     try:
 
-        df_historico = cargar_historico()
+        df_historico = agregar_grupos(cargar_historico())
 
     except Exception as error:
 
@@ -98,6 +99,37 @@ def mostrar_que_cambio():
     # --------------------------------------------------
 
     st.subheader(titular_cambios(df_historico, anio_anterior, anio))
+
+    # Si el formulario cambió las opciones de rol entre los dos años,
+    # los grupos no significan exactamente lo mismo: se avisa y se
+    # muestra qué cambió, plegado.
+    definiciones = cambios_de_definicion(df_historico, anio_anterior, anio)
+
+    if definiciones:
+
+        st.warning(
+            f"La comparación por grupo es aproximada: el formulario de "
+            f"{anio} cambió las opciones de rol respecto de {anio_anterior}.",
+            icon=":material/info:"
+        )
+
+        with st.expander("Qué cambió en el formulario"):
+
+            for grupo, (antes, ahora) in definiciones.items():
+                st.markdown(
+                    f"- **{grupo}**: en {anio_anterior} "
+                    + ", ".join(f"«{v}»" for v in antes)
+                    + f"; en {anio} "
+                    + ", ".join(f"«{v}»" for v in ahora)
+                    + "."
+                )
+
+            st.caption(
+                "Cada opción del formulario se asigna a un grupo para poder "
+                "comparar años. Cuando cambian las opciones, una misma persona "
+                "pudo haber elegido un grupo distinto (por ejemplo, un "
+                "estudiante que trabaja)."
+            )
 
     cambios = cambios_por_grupo(df_historico, anio_anterior, anio)
 

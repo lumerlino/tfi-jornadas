@@ -1,5 +1,12 @@
 import pandas as pd
 
+from utils.grupos_categorias import (
+    COLUMNA_GRUPO_ROL,
+    GRUPOS_SIN_CONTROL,
+    SIN_DATO,
+    agregar_grupos,
+    cambios_de_definicion,
+)
 from utils.proyecciones import calcular_tendencia
 
 
@@ -12,6 +19,22 @@ from utils.proyecciones import calcular_tendencia
 # Son funciones de pandas puras (sin Streamlit) para poder
 # probarlas sin la base de datos.
 # --------------------------------------------------
+
+
+NOTA_APROXIMADA = (
+    " La comparación por grupo es aproximada: el formulario cambió las "
+    "opciones de rol entre esos años."
+)
+
+
+def _asegurar_grupos(df_historico):
+
+    # Los cálculos por rol usan grupos comparables entre años
+    # (utils/grupos_categorias.py), no el valor original del Excel.
+    if COLUMNA_GRUPO_ROL in df_historico.columns:
+        return df_historico
+
+    return agregar_grupos(df_historico)
 
 
 # Cambios de un grupo por debajo de esto se consideran ruido y no
@@ -92,7 +115,9 @@ def volvieron(df_historico, anio_anterior, anio):
     return cantidad, porcentaje
 
 
-def cambios_por_grupo(df_historico, anio_anterior, anio, columna="Rol principal"):
+def cambios_por_grupo(df_historico, anio_anterior, anio, columna=COLUMNA_GRUPO_ROL):
+
+    df_historico = _asegurar_grupos(df_historico)
 
     asistentes = df_historico[
         df_historico["asistio"].astype(bool)
@@ -108,6 +133,10 @@ def cambios_por_grupo(df_historico, anio_anterior, anio, columna="Rol principal"
     )
 
     tabla["diferencia"] = tabla[anio] - tabla[anio_anterior]
+
+    # "Sin dato" son filas sin rol (por ejemplo, listas externas
+    # sumadas al Excel): no es un grupo de personas para comparar.
+    tabla = tabla.drop(index=SIN_DATO, errors="ignore")
 
     return tabla.sort_values("diferencia")
 
@@ -206,18 +235,23 @@ def _hallazgo_grupos(df_historico, anio_anterior, anio):
                 f"({formatear_numero(mayor_suba['diferencia'])} más)."
             )
 
+        if cambios_de_definicion(_asegurar_grupos(df_historico), anio_anterior, anio):
+            texto += NOTA_APROXIMADA
+
         return {"tipo": "bajo", "texto": texto}
 
     if subio:
 
-        return {
-            "tipo": "subio",
-            "texto": (
-                f"Ningún grupo bajó. El que más creció fue {grupo_suba} "
-                f"({personas(mayor_suba['diferencia'])} más que en "
-                f"{anio_anterior})."
-            )
-        }
+        texto = (
+            f"Ningún grupo bajó. El que más creció fue {grupo_suba} "
+            f"({personas(mayor_suba['diferencia'])} más que en "
+            f"{anio_anterior})."
+        )
+
+        if cambios_de_definicion(_asegurar_grupos(df_historico), anio_anterior, anio):
+            texto += NOTA_APROXIMADA
+
+        return {"tipo": "subio", "texto": texto}
 
     return {
         "tipo": "igual",
@@ -422,14 +456,16 @@ def roles_con_carrera(df_historico, anio):
     if COLUMNA_CARRERA not in df_historico.columns:
         return []
 
+    df_historico = _asegurar_grupos(df_historico)
+
     asistentes = _con_carreras(df_historico[
         df_historico["asistio"].astype(bool)
         & (df_historico["anio"] == anio)
     ])
 
     conteo = (
-        asistentes.dropna(subset=["carrera", "Rol principal"])
-        .groupby("Rol principal")["documento"]
+        asistentes.dropna(subset=["carrera", COLUMNA_GRUPO_ROL])
+        .groupby(COLUMNA_GRUPO_ROL)["documento"]
         .nunique()
         .sort_values(ascending=False)
     )
@@ -442,10 +478,12 @@ def carreras_por_rol(df_historico, anio_anterior, anio, rol):
     # Devuelve (tabla por carrera, personas del grupo en el año,
     # personas sin carrera, personas con más de una carrera).
 
+    df_historico = _asegurar_grupos(df_historico)
+
     asistentes = _con_carreras(df_historico[
         df_historico["asistio"].astype(bool)
         & df_historico["anio"].isin([anio_anterior, anio])
-        & (df_historico["Rol principal"] == rol)
+        & (df_historico[COLUMNA_GRUPO_ROL] == rol)
     ].dropna(subset=["documento"]))
 
     del_anio = asistentes[asistentes["anio"] == anio]
@@ -592,6 +630,8 @@ def titular_meta(tendencia, meta, anio, vinieron):
 
 def aprendizajes(df_historico):
 
+    df_historico = _asegurar_grupos(df_historico)
+
     resumen = resumen_anual(df_historico)
 
     if len(resumen) < 2:
@@ -628,6 +668,9 @@ def aprendizajes(df_historico):
                 f"más del grupo {cambios.index[0]} que en {anio}."
             )
 
+            if cambios_de_definicion(df_historico, anio_mejor, anio):
+                texto += NOTA_APROXIMADA
+
         resultado.append(texto)
 
     # 2. Grupos que crecieron en todas las ediciones
@@ -636,8 +679,8 @@ def aprendizajes(df_historico):
         asistentes = df_historico[df_historico["asistio"].astype(bool)]
 
         por_grupo = (
-            asistentes.dropna(subset=["documento", "Rol principal"])
-            .groupby(["Rol principal", "anio"])["documento"]
+            asistentes.dropna(subset=["documento", COLUMNA_GRUPO_ROL])
+            .groupby([COLUMNA_GRUPO_ROL, "anio"])["documento"]
             .nunique()
             .unstack(fill_value=0)
             .reindex(columns=resumen["anio"].tolist(), fill_value=0)
@@ -647,6 +690,22 @@ def aprendizajes(df_historico):
             grupo
             for grupo, fila in por_grupo.iterrows()
             if fila.iloc[0] > 0 and fila.diff().iloc[1:].gt(0).all()
+        ]
+
+        # Si el formulario cambió las opciones de un grupo, su
+        # crecimiento puede deberse a que el grupo se amplió: en ese
+        # caso no se afirma que "lo que hacemos funciona". Tampoco para
+        # "Otros perfiles" o "Sin dato", que juntan respuestas sueltas.
+        anios = resumen["anio"].tolist()
+
+        crecientes = [
+            grupo
+            for grupo in crecientes
+            if grupo not in GRUPOS_SIN_CONTROL
+            and not any(
+                cambios_de_definicion(df_historico, a, b).get(grupo)
+                for a, b in zip(anios[:-1], anios[1:])
+            )
         ]
 
         if crecientes:

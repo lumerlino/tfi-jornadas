@@ -1,6 +1,8 @@
 import io
 import os
 
+import pandas as pd
+
 import streamlit as st
 
 from utils.carga_datos import cargar_datos_demo, cargar_excel_usuario
@@ -34,6 +36,12 @@ from components.ui import (
     mostrar_pasos
 )
 from utils.resumen_jornadas import de_cada_10, formatear_numero
+from utils.grupos_categorias import (
+    COLUMNA_ROL,
+    agregar_grupos,
+    cambios_de_definicion,
+    roles_sin_grupo
+)
 
 
 # El tablero completo del archivo (el dashboard anterior) queda
@@ -550,6 +558,8 @@ def mostrar_analizar_jornada():
                 f"({formatear_numero(len(df))} registros)."
             )
 
+        mostrar_cambios_formulario(df, st.session_state.get("metadatos_jornada"))
+
         if (
             opcion == "📤 Cargar archivo Excel"
             and st.session_state["metadatos_jornada"] is not None
@@ -703,6 +713,80 @@ def mostrar_analizar_jornada():
         mostrar_dashboard_jornada(
             df,
             configuraciones
+        )
+
+
+def mostrar_cambios_formulario(df, metadatos):
+
+    # Advierte, antes de guardar, si el formulario cambió de un modo que
+    # afecta la comparación con otros años. Los datos se guardan igual,
+    # con sus valores originales; los grupos se aplican al comparar.
+
+    desconocidos = roles_sin_grupo(df)
+
+    if desconocidos:
+
+        lista = ", ".join(
+            f"«{valor}» ({cantidad})"
+            for valor, cantidad in list(desconocidos.items())[:6]
+        )
+
+        st.warning(
+            f"El Excel trae opciones de «Rol principal» que la app no "
+            f"reconoce: {lista}"
+            + ("…" if len(desconocidos) > 6 else "")
+            + ". Al comparar con otros años se van a contar como «Otros "
+            "perfiles». Si alguna corresponde a un grupo existente (por "
+            "ejemplo, estudiantes o docentes), avisá a quien mantiene la "
+            "app para asignarla a ese grupo.",
+            icon=":material/info:"
+        )
+
+    # Comparación con la edición anterior guardada: solo si hay
+    # conexión con la base (si no, se omite sin avisar).
+    anio = (metadatos or {}).get("anio")
+
+    if anio is None:
+        return
+
+    try:
+        historico = cargar_historico()
+    except Exception:
+        return
+
+    if historico.empty or COLUMNA_ROL not in historico.columns:
+        return
+
+    anteriores = sorted(a for a in historico["anio"].unique() if a < anio)
+
+    if not anteriores:
+        return
+
+    anio_anterior = int(anteriores[-1])
+
+    combinado = agregar_grupos(pd.concat(
+        [
+            historico[historico["anio"] == anio_anterior][["anio", COLUMNA_ROL]],
+            df[[COLUMNA_ROL]].assign(anio=anio),
+        ],
+        ignore_index=True
+    ))
+
+    definiciones = cambios_de_definicion(combinado, anio_anterior, anio)
+
+    if definiciones:
+
+        detalle = "; ".join(
+            f"«{grupo}»: " + ", ".join(antes) + " → " + ", ".join(ahora)
+            for grupo, (antes, ahora) in definiciones.items()
+        )
+
+        st.warning(
+            f"Cambiaron las opciones de «Rol principal» respecto de "
+            f"{anio_anterior} ({detalle}). La jornada se puede guardar igual; "
+            "al compararla con otros años, la app va a avisar que la "
+            "comparación por grupo es aproximada.",
+            icon=":material/info:"
         )
 
 

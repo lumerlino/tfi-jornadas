@@ -1,6 +1,7 @@
 import plotly.graph_objects as go
 import streamlit as st
 
+from utils.grupos_categorias import agregar_grupos
 from utils.historico_datos import cargar_historico
 from utils.resumen_jornadas import (
     aprendizajes,
@@ -42,7 +43,7 @@ def mostrar_proxima_jornada():
 
     try:
 
-        df_historico = cargar_historico()
+        df_historico = agregar_grupos(cargar_historico())
 
     except Exception as error:
 
