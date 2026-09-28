@@ -1,6 +1,6 @@
 import streamlit as st
 
-from components.navegacion import ir_a
+from components.navegacion import ir_a, tarjeta
 from components.ui import PASOS_CARGA
 
 
@@ -25,7 +25,7 @@ def mostrar_preparar_datos():
     # CARGAR JORNADA NUEVA: la tarea principal, a lo ancho
     # --------------------------------------------------
 
-    with st.container(border=True):
+    with tarjeta("nueva_jornada"):
 
         st.subheader("Nueva jornada")
 
@@ -75,7 +75,7 @@ def mostrar_preparar_datos():
 
         with columna:
 
-            with st.container(border=True, height="stretch"):
+            with tarjeta(clave, height="stretch"):
 
                 st.markdown(f"#### {titulo}")
                 st.caption(descripcion)

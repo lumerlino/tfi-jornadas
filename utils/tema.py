@@ -10,7 +10,9 @@ import streamlit as st
 # solo, pero los colores de las trazas de Plotly se fijan desde
 # Python, así que acá se elige el juego según el modo activo.
 # Cada color cumple una sola función:
-#   marca    -> franja superior y botones (nunca en gráficos)
+#   marca    -> franja superior, títulos de tarjetas y botones
+#               (nunca en gráficos)
+#   tarjeta  -> fondo de las tarjetas (en oscuro reemplaza a la sombra)
 #   datos    -> serie principal; datos_2 -> serie de referencia
 #   bajo     -> disminución; subio -> aumento (siempre con ícono/signo)
 #   atencion -> advertencias (siempre con ícono)
@@ -20,6 +22,7 @@ COLORES = {
     "light": {
         "marca": "#7e0000",
         "fondo": "#fdf9f8",
+        "tarjeta": "#ffffff",
         "texto": "#0b0b0b",
         "texto_2": "#52514e",
         "texto_3": "#6f6d68",
@@ -34,6 +37,7 @@ COLORES = {
     "dark": {
         "marca": "#7e0000",
         "fondo": "#1b1918",
+        "tarjeta": "#242120",
         "texto": "#ffffff",
         "texto_2": "#c3c2b7",
         "texto_3": "#9a988f",
@@ -120,6 +124,11 @@ ALTO_BARRA = "60px"
 # claro y en oscuro.
 MENU_FONDO = "#5c0000"
 
+# Sombra de las tarjetas: apenas visible, solo para despegarlas del
+# fondo claro. En oscuro no se nota; ahí separa el color de fondo.
+SOMBRA = "0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05)"
+SOMBRA_HOVER = "0 4px 12px rgba(0, 0, 0, 0.14)"
+
 
 def mostrar_marco():
 
@@ -132,6 +141,7 @@ def mostrar_marco():
     st.logo(str(LOGO), size="large")
 
     marca = COLORES["light"]["marca"]
+    tarjeta = colores()["tarjeta"]
 
     st.markdown(
         f"""
@@ -153,6 +163,77 @@ def mostrar_marco():
         }}
         [data-testid="stSidebarHeader"] button {{
             color: #ffffff;
+        }}
+
+        /* ---------- TARJETAS ----------
+           Un solo estilo para todo lo que es "tarjeta": indicadores
+           (st.metric con border=True), contenedores creados con
+           tarjeta() y hallazgos. Título en franja bordó solo en los
+           indicadores. */
+
+        [data-testid="stMetric"],
+        [class*="st-key-tarjeta_"],
+        .hallazgo {{
+            background: {tarjeta};
+            box-shadow: {SOMBRA};
+        }}
+        [data-testid="stMetric"] {{
+            overflow: hidden;
+        }}
+        [data-testid="stMetric"] > div {{
+            padding: 0 0 0.9rem 0 !important;
+        }}
+        [data-testid="stMetricLabel"] {{
+            display: flex;
+            width: 100%;
+            background: {marca};
+            color: #ffffff;
+            padding: 0.55rem 1rem;
+            margin-bottom: 0.6rem;
+        }}
+        [data-testid="stMetricLabel"] p {{
+            color: #ffffff;
+        }}
+        [data-testid="stMetricLabel"] svg {{
+            stroke: rgba(255, 255, 255, 0.85);
+        }}
+        [data-testid="stMetricValue"],
+        [data-testid="stMetricDelta"] {{
+            padding: 0 1rem;
+        }}
+
+        /* ---------- ACCESOS EN MOSAICO ----------
+           st.page_link dentro de un contenedor acceso_*: botón grande
+           con ícono arriba, para ir a otra pantalla. */
+
+        [class*="st-key-acceso_"] [data-testid="stElementContainer"],
+        [class*="st-key-acceso_"] [data-testid="stPageLink"],
+        [class*="st-key-acceso_"] [data-testid="stPageLink"] > div {{
+            width: 100%;
+        }}
+        [class*="st-key-acceso_"] a {{
+            width: 100%;
+            flex-direction: column;
+            justify-content: center;
+            gap: 0.35rem;
+            min-height: 5.5rem;
+            background: {marca};
+            border-radius: 0.6rem;
+            box-shadow: {SOMBRA};
+            transition: box-shadow 0.15s ease, transform 0.15s ease;
+        }}
+        [class*="st-key-acceso_"] a:hover {{
+            background: {marca};
+            box-shadow: {SOMBRA_HOVER};
+            transform: translateY(-1px);
+        }}
+        [class*="st-key-acceso_"] a p,
+        [class*="st-key-acceso_"] a span {{
+            color: #ffffff !important;
+            text-align: center;
+        }}
+        [class*="st-key-acceso_"] [data-testid="stIconMaterial"] {{
+            font-size: 1.6rem;
         }}
         </style>
         """,

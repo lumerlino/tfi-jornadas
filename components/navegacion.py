@@ -11,6 +11,19 @@ import streamlit as st
 PAGINAS = {}
 
 
+def acceso(clave, texto, icono):
+
+    # Botón grande en mosaico (estilo en utils/tema.py).
+    with st.container(key=f"acceso_{clave}"):
+        st.page_link(PAGINAS[clave], label=texto, icon=icono)
+
+
+def tarjeta(clave, **kwargs):
+
+    # Contenedor con borde y el estilo de tarjeta de la app.
+    return st.container(border=True, key=f"tarjeta_{clave}", **kwargs)
+
+
 def ir_a(clave, texto, principal=False):
 
     if st.button(

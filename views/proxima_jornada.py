@@ -2,6 +2,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from utils.grupos_categorias import agregar_grupos
+from components.navegacion import tarjeta
 from components.ui import mostrar_origen_datos
 from utils.historico_datos import cargar_historico
 from utils.metricas import tabla_proxima
@@ -98,7 +99,7 @@ def mostrar_proxima_jornada():
     # NIVEL 1: META + TITULAR + GRÁFICO C
     # --------------------------------------------------
 
-    with st.container(border=True):
+    with tarjeta("meta"):
 
         if es_automatica:
             st.markdown(

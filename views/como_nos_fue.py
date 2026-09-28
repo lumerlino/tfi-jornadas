@@ -1,7 +1,7 @@
 import plotly.graph_objects as go
 import streamlit as st
 
-from components.navegacion import ir_a
+from components.navegacion import acceso, ir_a
 from components.ui import mostrar_hallazgos, mostrar_origen_datos, selector_anio
 from utils.metricas import (
     ayuda,
@@ -105,17 +105,25 @@ def mostrar_como_nos_fue():
 
     else:
 
-        st.subheader("Lo más importante")
+        col_hallazgos, col_accesos = st.columns([2, 1], gap="medium")
 
-        mostrar_hallazgos(hallazgos(df_historico, anio))
+        with col_hallazgos:
 
-        col_cambio, col_proxima, _ = st.columns([1, 1, 2])
+            st.subheader("Lo más importante")
 
-        with col_cambio:
-            ir_a("que_cambio", "Ver qué cambió →")
+            mostrar_hallazgos(hallazgos(df_historico, anio))
 
-        with col_proxima:
-            ir_a("proxima_jornada", "Ver próxima jornada →")
+        with col_accesos:
+
+            st.subheader("Seguir por")
+
+            col_cambio, col_proxima = st.columns(2)
+
+            with col_cambio:
+                acceso("que_cambio", "Qué cambió", ":material/compare_arrows:")
+
+            with col_proxima:
+                acceso("proxima_jornada", "Próxima jornada", ":material/flag:")
 
     # --------------------------------------------------
     # NIVEL 2: GRÁFICO A

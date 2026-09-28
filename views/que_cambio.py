@@ -1,6 +1,7 @@
 import plotly.graph_objects as go
 import streamlit as st
 
+from components.navegacion import tarjeta
 from components.ui import mostrar_origen_datos, selector_anio
 from utils.metricas import tabla_que_cambio
 from utils.grupos_categorias import agregar_grupos, cambios_de_definicion
@@ -146,7 +147,7 @@ def mostrar_que_cambio():
 
     if accion:
 
-        with st.container(border=True):
+        with tarjeta("accion"):
             st.markdown("**Qué podemos hacer**")
             st.write(accion)
 
