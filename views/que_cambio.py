@@ -133,7 +133,7 @@ def mostrar_que_cambio():
                 key="que_cambio_rol"
             )
 
-            tabla, total, sin_carrera = carreras_por_rol(
+            tabla, total, sin_carrera, varias_carreras = carreras_por_rol(
                 df_historico,
                 anio_anterior,
                 anio,
@@ -150,6 +150,16 @@ def mostrar_que_cambio():
                     grafico_carreras(tabla, anio_anterior, anio),
                     use_container_width=True,
                     key="grafico_carreras"
+                )
+
+            if varias_carreras > 0:
+
+                st.caption(
+                    f"{formatear_numero(varias_carreras)} "
+                    f"persona{'' if varias_carreras == 1 else 's'} "
+                    f"indic{'ó' if varias_carreras == 1 else 'aron'} más de "
+                    "una carrera y cuenta en cada una, por eso la suma de las "
+                    "barras puede ser mayor que el total del grupo."
                 )
 
             if sin_carrera > 0:

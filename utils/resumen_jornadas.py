@@ -376,23 +376,45 @@ def accion_sugerida(df_historico, anio_anterior, anio):
 
 
 # Carrera: la completan personas vinculadas a investigación, de
-# cualquier rol. "Otro" + texto libre se agrupa en "Otras áreas"
-# (suelen ser áreas o secretarías, no carreras).
+# cualquier rol. Es de opción múltiple: una misma celda puede traer
+# varias carreras separadas por coma ("Lic. en Sistemas, Lic. en
+# Logística" o sin espacio). Se separan antes de contar, así cada
+# persona suma en cada carrera que indicó. "Otro" + texto libre se
+# agrupa en "Otras áreas" (suelen ser áreas o secretarías).
 COLUMNA_CARRERA = "Investigador Carreras"
 OTRAS_AREAS = "Otras áreas"
+VALORES_VACIOS = {"", "-", "nan", "none", "<na>"}
 
 
-def _carrera_normalizada(serie):
+def _con_carreras(df):
 
-    texto = serie.astype("string").str.strip()
+    # Devuelve una fila por persona y carrera, en la columna
+    # "carrera" (vacía si la persona no indicó ninguna).
 
-    texto = texto.mask(texto.isin(["", "nan", "None", "<NA>"]))
+    df = df.copy()
 
-    # Sin el fillna, la comparación con un vacío da <NA> y mask lo
-    # toma como verdadero: los vacíos terminarían en "Otras áreas".
-    es_otro = (texto.str.lower() == "otro").fillna(False).astype(bool)
+    listas = (
+        df[COLUMNA_CARRERA]
+        .astype("string")
+        .fillna("")
+        .str.split(",")
+    )
 
-    return texto.mask(es_otro, OTRAS_AREAS)
+    def limpiar(carreras):
+        limpias = []
+        for carrera in carreras:
+            carrera = carrera.strip()
+            if carrera.lower() in VALORES_VACIOS:
+                continue
+            if carrera.lower() == "otro":
+                carrera = OTRAS_AREAS
+            if carrera not in limpias:
+                limpias.append(carrera)
+        return limpias or [None]
+
+    df["carrera"] = listas.apply(limpiar)
+
+    return df.explode("carrera")
 
 
 def roles_con_carrera(df_historico, anio):
@@ -400,12 +422,10 @@ def roles_con_carrera(df_historico, anio):
     if COLUMNA_CARRERA not in df_historico.columns:
         return []
 
-    asistentes = df_historico[
+    asistentes = _con_carreras(df_historico[
         df_historico["asistio"].astype(bool)
         & (df_historico["anio"] == anio)
-    ].copy()
-
-    asistentes["carrera"] = _carrera_normalizada(asistentes[COLUMNA_CARRERA])
+    ])
 
     conteo = (
         asistentes.dropna(subset=["carrera", "Rol principal"])
@@ -419,21 +439,30 @@ def roles_con_carrera(df_historico, anio):
 
 def carreras_por_rol(df_historico, anio_anterior, anio, rol):
 
-    asistentes = df_historico[
+    # Devuelve (tabla por carrera, personas del grupo en el año,
+    # personas sin carrera, personas con más de una carrera).
+
+    asistentes = _con_carreras(df_historico[
         df_historico["asistio"].astype(bool)
         & df_historico["anio"].isin([anio_anterior, anio])
         & (df_historico["Rol principal"] == rol)
-    ].dropna(subset=["documento"]).copy()
+    ].dropna(subset=["documento"]))
 
-    asistentes["carrera"] = _carrera_normalizada(asistentes[COLUMNA_CARRERA])
+    del_anio = asistentes[asistentes["anio"] == anio]
 
-    total = asistentes[asistentes["anio"] == anio]["documento"].nunique()
+    total = del_anio["documento"].nunique()
 
-    sin_carrera = (
-        asistentes[
-            (asistentes["anio"] == anio) & asistentes["carrera"].isna()
-        ]["documento"].nunique()
+    carreras_por_persona = (
+        del_anio.dropna(subset=["carrera"])
+        .groupby("documento")["carrera"]
+        .nunique()
     )
+
+    # Sin carrera = personas del año que no indicaron ninguna (si una
+    # persona se inscribió dos veces y en una puso carrera, cuenta
+    # como con carrera).
+    sin_carrera = total - len(carreras_por_persona)
+    varias_carreras = int((carreras_por_persona > 1).sum())
 
     tabla = (
         asistentes.dropna(subset=["carrera"])
@@ -447,7 +476,12 @@ def carreras_por_rol(df_historico, anio_anterior, anio, rol):
 
     tabla["diferencia"] = tabla[anio] - tabla[anio_anterior]
 
-    return tabla.sort_values(anio, ascending=False), total, sin_carrera
+    return (
+        tabla.sort_values(anio, ascending=False),
+        total,
+        sin_carrera,
+        varias_carreras
+    )
 
 
 def titular_carreras(tabla, total, sin_carrera, rol, anio_anterior, cambio_minimo=3):
