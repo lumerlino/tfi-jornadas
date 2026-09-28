@@ -27,7 +27,7 @@ def mostrar_preparar_datos():
 
     with st.container(border=True):
 
-        st.subheader("Cargar jornada nueva")
+        st.subheader("Nueva jornada")
 
         st.caption(
             "Se sube el Excel de inscripción y asistencia de una edición; "

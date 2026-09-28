@@ -58,9 +58,9 @@ PAGINAS.update({
     ),
     "cargar_jornada": st.Page(
         mostrar_analizar_jornada,
-        title="Cargar jornada nueva",
+        title="Nueva jornada",
         icon=":material/upload_file:",
-        url_path="cargar-jornada"
+        url_path="nueva-jornada"
     ),
     "jornadas_guardadas": st.Page(
         mostrar_gestion_cargas,

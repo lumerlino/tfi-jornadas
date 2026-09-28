@@ -19,7 +19,7 @@ def mostrar_configuracion_columnas():
     st.write(
         "Acá se pueden editar o eliminar las configuraciones de "
         "columnas que la app no conoce de entrada (ver la sección "
-        "'Columnas nuevas detectadas' en «Cargar jornada nueva»)."
+        "'Columnas nuevas detectadas' en «Nueva jornada»)."
     )
 
     try:

@@ -58,25 +58,30 @@ def _cambiar_archivo():
 
 def mostrar_analizar_jornada():
 
-    st.title("Cargar jornada nueva")
+    st.title("Nueva jornada")
 
     demo_habilitado = (
         os.getenv("HABILITAR_DEMO", "false").lower() == "true"
     )
 
-    if demo_habilitado:
+    # La introducción explica el recorrido completo y solo se muestra
+    # mientras no hay un Excel cargado: después, la guía de pasos ya
+    # dice qué sigue.
+    if st.session_state.get("archivo_excel") is None:
 
-        st.write(
-            "Podés cargar un archivo Excel con los datos de una jornada "
-            "o utilizar los datos de demostración."
-        )
+        if demo_habilitado:
 
-    else:
+            st.write(
+                "Subí el Excel de la jornada (o usá los datos de "
+                "demostración) para analizarlo y guardarlo en el histórico."
+            )
 
-        st.write(
-            "Cargá un archivo Excel con los datos de una jornada "
-            "para comenzar el análisis."
-        )
+        else:
+
+            st.write(
+                "Subí el Excel de la jornada para analizarlo y guardarlo "
+                "en el histórico."
+            )
 
 
     # Guía de pasos: se reserva el lugar arriba y se completa más
