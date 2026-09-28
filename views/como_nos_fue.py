@@ -2,7 +2,13 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from components.navegacion import ir_a
-from components.ui import mostrar_hallazgos, selector_anio
+from components.ui import mostrar_hallazgos, mostrar_origen_datos, selector_anio
+from utils.metricas import (
+    ayuda,
+    fuente_asistencia,
+    paso_a_paso_historico,
+    tabla_como_nos_fue,
+)
 from utils.grupos_categorias import agregar_grupos
 from utils.historico_datos import cargar_historico
 from utils.resumen_jornadas import (
@@ -129,27 +135,23 @@ def mostrar_como_nos_fue():
         )
 
     # --------------------------------------------------
-    # NIVEL 3: DETALLE TÉCNICO
+    # NIVEL 3: ¿DE DÓNDE SALEN ESTOS NÚMEROS?
     # --------------------------------------------------
 
-    with st.expander("Detalle técnico"):
+    df_anio = df_historico[df_historico["anio"] == anio]
+    fuente = fuente_asistencia(df_anio)
+    anio_anterior = int(fila_anterior["anio"]) if fila_anterior is not None else None
 
-        st.markdown(
-            "- **Inscriptos**: personas distintas (por documento) en el "
-            "registro de la jornada.\n"
-            "- **Vinieron**: personas con al menos un día de asistencia "
-            "registrada.\n"
-            "- **De cada 10 inscriptos**: vinieron ÷ inscriptos, "
-            "redondeado a una cifra.\n"
-            "- **Volvieron**: personas que asistieron a la jornada "
-            "anterior y también a esta.\n"
-            "- **Tendencia**: regresión lineal sobre las personas que "
-            "vinieron cada año; es orientativa y necesita al menos 3 "
-            "ediciones."
-        )
+    mostrar_origen_datos(
+        tabla_como_nos_fue(fuente, anio, anio_anterior),
+        pasos=paso_a_paso_historico(df_anio, fuente),
+        titulo_pasos=f"Cómo se llegó a «Vinieron» en {anio}"
+    )
 
 
 def mostrar_indicadores(df_historico, fila, fila_anterior):
+
+    fuente = fuente_asistencia(df_historico[df_historico["anio"] == fila["anio"]])
 
     vinieron = int(fila["vinieron"])
     inscriptos = int(fila["inscriptos"])
@@ -160,17 +162,28 @@ def mostrar_indicadores(df_historico, fila, fila_anterior):
     if fila_anterior is None:
 
         with col1:
-            st.metric("Vinieron", formatear_numero(vinieron), border=True)
+            st.metric(
+                "Vinieron",
+                formatear_numero(vinieron),
+                border=True,
+                help=ayuda("vinieron", fuente)
+            )
 
         with col2:
             st.metric(
                 "De cada 10 inscriptos",
                 f"{proporcion} vinieron",
-                border=True
+                border=True,
+                help=ayuda("de_cada_10")
             )
 
         with col3:
-            st.metric("Se anotaron", formatear_numero(inscriptos), border=True)
+            st.metric(
+                "Se anotaron",
+                formatear_numero(inscriptos),
+                border=True,
+                help=ayuda("se_anotaron")
+            )
 
         return
 
@@ -191,7 +204,8 @@ def mostrar_indicadores(df_historico, fila, fila_anterior):
                 if variacion is not None
                 else None
             ),
-            border=True
+            border=True,
+            help=ayuda("vinieron", fuente)
         )
 
     with col2:
@@ -208,9 +222,8 @@ def mostrar_indicadores(df_historico, fila, fila_anterior):
             ),
             border=True,
             help=(
-                f"Igual que en {anio_anterior}."
-                if diferencia == 0
-                else None
+                ayuda("de_cada_10")
+                + (f" Igual que en {anio_anterior}." if diferencia == 0 else "")
             )
         )
 
@@ -227,7 +240,8 @@ def mostrar_indicadores(df_historico, fila, fila_anterior):
         st.metric(
             f"Volvieron de {anio_anterior}",
             formatear_numero(cantidad),
-            border=True
+            border=True,
+            help=ayuda("volvieron", anio_anterior=anio_anterior)
         )
 
         st.caption(f"{porcentaje:.0f} % de quienes vinieron en {anio_anterior}")

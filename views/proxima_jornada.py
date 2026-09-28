@@ -2,7 +2,9 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from utils.grupos_categorias import agregar_grupos
+from components.ui import mostrar_origen_datos
 from utils.historico_datos import cargar_historico
+from utils.metricas import tabla_proxima
 from utils.resumen_jornadas import (
     aprendizajes,
     estimacion,
@@ -154,33 +156,10 @@ def mostrar_proxima_jornada():
             )
 
     # --------------------------------------------------
-    # NIVEL 3: DETALLE TÉCNICO
+    # NIVEL 3: ¿DE DÓNDE SALEN ESTOS NÚMEROS?
     # --------------------------------------------------
 
-    with st.expander("Detalle técnico"):
-
-        if tendencia["suficiente"]:
-
-            r2 = f"{tendencia['r2']:.2f}".replace(".", ",")
-
-            st.markdown(
-                f"- Regresión lineal sobre {tendencia['anios_disponibles']} "
-                f"ediciones ({int(resumen['anio'].iloc[0])}–{anio}).\n"
-                f"- Estimación {proximo}: {tendencia['proyeccion']:.0f} "
-                f"personas (en el titular se redondea a "
-                f"{formatear_numero(redondear_a_10(tendencia['proyeccion']))}).\n"
-                f"- R² = {r2}: cuánto de la variación entre años explica la "
-                "línea. Con pocas ediciones la confianza es baja; es "
-                "orientativo, no una predicción."
-            )
-
-        else:
-
-            st.markdown(
-                f"- La estimación necesita al menos "
-                f"{tendencia['anios_necesarios']} ediciones; hoy hay "
-                f"{tendencia['anios_disponibles']}."
-            )
+    mostrar_origen_datos(tabla_proxima(tendencia, anio))
 
 
 def grafico_proxima(resumen, tendencia, meta):

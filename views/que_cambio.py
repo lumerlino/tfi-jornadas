@@ -1,7 +1,8 @@
 import plotly.graph_objects as go
 import streamlit as st
 
-from components.ui import selector_anio
+from components.ui import mostrar_origen_datos, selector_anio
+from utils.metricas import tabla_que_cambio
 from utils.grupos_categorias import agregar_grupos, cambios_de_definicion
 from utils.historico_datos import cargar_historico
 from utils.resumen_jornadas import (
@@ -210,22 +211,10 @@ def mostrar_que_cambio():
         st.write(reencuentro(df_historico, anio_anterior, anio))
 
     # --------------------------------------------------
-    # NIVEL 3: DETALLE TÉCNICO
+    # NIVEL 3: ¿DE DÓNDE SALEN ESTOS NÚMEROS?
     # --------------------------------------------------
 
-    with st.expander("Detalle técnico"):
-
-        st.markdown(
-            "- Se cuentan **personas distintas** (por documento) que "
-            "vinieron al menos un día.\n"
-            "- Un grupo aparece en el titular si cambió en **5 personas o "
-            "más**; cambios menores se consideran ruido.\n"
-            "- La **carrera** la completan las personas vinculadas a "
-            "investigación, de cualquier rol. La opción «Otro» se agrupa "
-            "como «Otras áreas».\n"
-            "- **Volvieron** son las personas que asistieron en las dos "
-            "ediciones comparadas."
-        )
+    mostrar_origen_datos(tabla_que_cambio(anio, anio_anterior))
 
 
 def grafico_cambios(cambios, anio_anterior, anio):

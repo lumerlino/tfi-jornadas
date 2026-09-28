@@ -33,7 +33,14 @@ from components.ui import (
     PASOS_CARGA,
     mostrar_archivo_cargado,
     mostrar_error,
+    mostrar_origen_datos,
     mostrar_pasos
+)
+from utils.metricas import (
+    ayuda,
+    fuente_asistencia,
+    paso_a_paso_carga,
+    tabla_como_nos_fue,
 )
 from utils.resumen_jornadas import de_cada_10, formatear_numero
 from utils.grupos_categorias import (
@@ -336,6 +343,10 @@ def mostrar_analizar_jornada():
     # PREPARACIÓN Y LIMPIEZA DE LOS DATOS
     # --------------------------------------------------
 
+    # El Excel tal como se subió: lo usa el paso a paso de
+    # "¿De dónde salen estos números?" (filas originales, días sin «Si»).
+    df_original = df
+
     df, reporte_limpieza_antes, reporte_limpieza_despues = (
         preparar_datos(
             df
@@ -583,7 +594,11 @@ def mostrar_analizar_jornada():
 
             st.subheader("Resumen de los datos")
 
-        mostrar_resumen_carga(df)
+        mostrar_resumen_carga(
+            df,
+            df_original,
+            reporte_limpieza_despues["columnas_asistencia"]
+        )
 
         if (
             opcion == "📤 Cargar archivo Excel"
@@ -790,24 +805,43 @@ def mostrar_cambios_formulario(df, metadatos):
         )
 
 
-def mostrar_resumen_carga(df):
+def mostrar_resumen_carga(df, df_original, columnas_dias):
 
     personas = df.dropna(subset=["documento"])
 
     inscriptos = personas["documento"].nunique()
     vinieron = personas[personas["asistio"].astype(bool)]["documento"].nunique()
 
+    fuente = fuente_asistencia(df_original)
+
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric("Se anotaron", formatear_numero(inscriptos), border=True)
+        st.metric(
+            "Se anotaron",
+            formatear_numero(inscriptos),
+            border=True,
+            help=ayuda("se_anotaron")
+        )
 
     with col2:
-        st.metric("Vinieron", formatear_numero(vinieron), border=True)
+        st.metric(
+            "Vinieron",
+            formatear_numero(vinieron),
+            border=True,
+            help=ayuda("vinieron", fuente)
+        )
 
     with col3:
         st.metric(
             "De cada 10 inscriptos",
             f"{de_cada_10(vinieron, inscriptos)} vinieron",
-            border=True
+            border=True,
+            help=ayuda("de_cada_10")
         )
+
+    mostrar_origen_datos(
+        tabla_como_nos_fue(fuente, None, None),
+        pasos=paso_a_paso_carga(df_original, df, columnas_dias),
+        titulo_pasos="Cómo se llegó a «Vinieron» en este archivo"
+    )

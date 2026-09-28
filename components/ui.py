@@ -343,3 +343,24 @@ def mostrar_archivo_cargado(nombre, registros, al_cambiar, key):
                 on_click=al_cambiar,
                 width="stretch"
             )
+
+
+# --------------------------------------------------
+# ¿DE DÓNDE SALEN ESTOS NÚMEROS? (ver utils/metricas.py)
+# --------------------------------------------------
+
+
+def mostrar_origen_datos(filas, pasos=None, titulo_pasos=None):
+
+    with st.expander("¿De dónde salen estos números?"):
+
+        if pasos:
+            st.markdown(f"**{titulo_pasos or 'Paso a paso'}**")
+            st.markdown("  \n".join(pasos))
+
+        tabla = "| Número | Columnas del Excel | Cálculo |\n|---|---|---|\n" + "\n".join(
+            f"| {numero} | {columnas} | {calculo} |"
+            for numero, columnas, calculo in filas
+        )
+
+        st.markdown(tabla)
