@@ -40,8 +40,9 @@ SECCIONES_MENU = [
 
 TAREAS = ["cargar_jornada", "jornadas_guardadas", "columnas", "explorar"]
 
-# Mismo bordó que la barra de la sección activa en Nueva jornada.
-BORDO_ACTIVO = "#a12628"
+# Texto del menú sobre el bordó oscuro (utils/tema.py, MENU_FONDO).
+TEXTO_MENU = "#f5dcdc"
+TEXTO_ROTULO = "#e0a9a9"
 
 
 def clave_actual(pagina):
@@ -88,7 +89,15 @@ def mostrar_menu(pagina):
         [class*="st-key-rotulo_"] {{
             margin-top: 0.9rem;
         }}
+        [data-testid="stSidebar"] a p,
+        [data-testid="stSidebar"] a span {{
+            color: {TEXTO_MENU} !important;
+        }}
+        [data-testid="stSidebar"] a:hover {{
+            background: rgba(255, 255, 255, 0.08);
+        }}
         [class*="st-key-rotulo_"] p {{
+            color: {TEXTO_ROTULO};
             font-size: 0.8rem;
             letter-spacing: 0.02em;
         }}
@@ -96,11 +105,16 @@ def mostrar_menu(pagina):
             padding-left: 1.4rem;
         }}
         [class*="st-key-menu_tarea_"] a p {{
+            white-space: normal;
             font-size: 0.9rem;
         }}
         .st-key-{activo} a {{
-            background: rgba(161, 38, 40, 0.13);
-            border-left-color: {BORDO_ACTIVO};
+            background: rgba(255, 255, 255, 0.16);
+            border-left-color: #ffffff;
+        }}
+        .st-key-{activo} a p,
+        .st-key-{activo} a span {{
+            color: #ffffff !important;
         }}
         </style>
         """,

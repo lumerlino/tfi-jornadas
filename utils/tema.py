@@ -115,6 +115,11 @@ LOGO = Path(__file__).resolve().parent.parent / "assets" / "logo_jornadas.svg"
 # una sola barra de lado a lado.
 ALTO_BARRA = "60px"
 
+# Fondo del menú lateral: bordó más oscuro que la barra, para que la
+# barra (identidad) y el menú (navegación) se distingan. Igual en
+# claro y en oscuro.
+MENU_FONDO = "#5c0000"
+
 
 def mostrar_marco():
 
@@ -143,7 +148,7 @@ def mostrar_marco():
                 to bottom,
                 {marca} 0,
                 {marca} {ALTO_BARRA},
-                transparent {ALTO_BARRA}
+                {MENU_FONDO} {ALTO_BARRA}
             );
         }}
         [data-testid="stSidebarHeader"] button {{
