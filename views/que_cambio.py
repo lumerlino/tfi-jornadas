@@ -137,11 +137,13 @@ def mostrar_que_cambio():
 
     if not cambios.empty:
 
-        st.plotly_chart(
-            grafico_cambios(cambios, anio_anterior, anio),
-            use_container_width=True,
-            key="grafico_cambios"
-        )
+        with tarjeta("grafico_cambios"):
+
+            st.plotly_chart(
+                grafico_cambios(cambios, anio_anterior, anio),
+                use_container_width=True,
+                key="grafico_cambios"
+            )
 
     accion = accion_sugerida(df_historico, anio_anterior, anio)
 

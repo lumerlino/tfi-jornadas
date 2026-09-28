@@ -17,8 +17,10 @@ showSidebarBorder = true
 
 [theme.light]
 primaryColor = "#7e0000"
-backgroundColor = "#fdf9f8"
-secondaryBackgroundColor = "#f5eeed"
+# Fondo un poco más oscuro que las tarjetas (blancas) para que
+# se lean como flotando sobre la página.
+backgroundColor = "#f4efee"
+secondaryBackgroundColor = "#ebe3e2"
 textColor = "#0b0b0b"
 borderColor = "#e3dcdb"
 redColor = "#c2410c"

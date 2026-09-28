@@ -114,25 +114,29 @@ def mostrar_proxima_jornada():
 
     st.subheader(titular_meta(tendencia, meta, anio, vinieron))
 
-    st.plotly_chart(
-        grafico_proxima(resumen, tendencia, meta),
-        use_container_width=True,
-        key="grafico_proxima"
-    )
+    with tarjeta("grafico_proxima"):
 
-    st.caption(
-        "Línea llena: personas que vinieron. Línea punteada: hacia dónde "
-        "vamos si nada cambia. Línea de puntos horizontal: la meta."
-    )
+        st.plotly_chart(
+            grafico_proxima(resumen, tendencia, meta),
+            use_container_width=True,
+            key="grafico_proxima"
+        )
+
+        st.caption(
+            "Línea llena: personas que vinieron. Línea punteada: hacia dónde "
+            "vamos si nada cambia. Línea de puntos horizontal: la meta."
+        )
 
     lista = aprendizajes(df_historico)
 
     if lista:
 
-        st.subheader("Lo que aprendimos de otros años")
+        with tarjeta("aprendizajes"):
 
-        for texto in lista:
-            st.markdown(f"- {texto}")
+            st.subheader("Lo que aprendimos de otros años")
+
+            for texto in lista:
+                st.markdown(f"- {texto}")
 
     # --------------------------------------------------
     # NIVEL 2: CAMBIAR LA META

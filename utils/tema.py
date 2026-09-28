@@ -12,7 +12,7 @@ import streamlit as st
 # Cada color cumple una sola función:
 #   marca    -> franja superior, títulos de tarjetas y botones
 #               (nunca en gráficos)
-#   tarjeta  -> fondo de las tarjetas (en oscuro reemplaza a la sombra)
+#   tarjeta  -> fondo de las tarjetas; sombra -> las hace "flotar"
 #   datos    -> serie principal; datos_2 -> serie de referencia
 #   bajo     -> disminución; subio -> aumento (siempre con ícono/signo)
 #   atencion -> advertencias (siempre con ícono)
@@ -21,8 +21,10 @@ import streamlit as st
 COLORES = {
     "light": {
         "marca": "#7e0000",
-        "fondo": "#fdf9f8",
+        "fondo": "#f4efee",
         "tarjeta": "#ffffff",
+        "sombra": "0 6px 18px rgba(60, 20, 20, 0.10), 0 1px 3px rgba(60, 20, 20, 0.08)",
+        "sombra_hover": "0 10px 26px rgba(60, 20, 20, 0.18), 0 2px 6px rgba(60, 20, 20, 0.10)",
         "texto": "#0b0b0b",
         "texto_2": "#52514e",
         "texto_3": "#6f6d68",
@@ -37,7 +39,9 @@ COLORES = {
     "dark": {
         "marca": "#7e0000",
         "fondo": "#1b1918",
-        "tarjeta": "#242120",
+        "tarjeta": "#262322",
+        "sombra": "0 6px 18px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.35)",
+        "sombra_hover": "0 10px 26px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4)",
         "texto": "#ffffff",
         "texto_2": "#c3c2b7",
         "texto_3": "#9a988f",
@@ -78,6 +82,10 @@ def estilo_figura(fig):
     c = colores()
 
     fig.update_layout(
+        # Transparente: el fondo lo pone la tarjeta que contiene al
+        # gráfico (ver mostrar_marco).
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
         margin=dict(l=8, r=8, t=36, b=8),
         legend=dict(
             orientation="h",
@@ -124,10 +132,6 @@ ALTO_BARRA = "60px"
 # claro y en oscuro.
 MENU_FONDO = "#5c0000"
 
-# Sombra de las tarjetas: apenas visible, solo para despegarlas del
-# fondo claro. En oscuro no se nota; ahí separa el color de fondo.
-SOMBRA = "0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05)"
-SOMBRA_HOVER = "0 4px 12px rgba(0, 0, 0, 0.14)"
 
 
 def mostrar_marco():
@@ -141,7 +145,8 @@ def mostrar_marco():
     st.logo(str(LOGO), size="large")
 
     marca = COLORES["light"]["marca"]
-    tarjeta = colores()["tarjeta"]
+    claro = COLORES["light"]
+    oscuro = COLORES["dark"]
 
     st.markdown(
         f"""
@@ -165,17 +170,51 @@ def mostrar_marco():
             color: #ffffff;
         }}
 
+        /* Colores de tarjeta por modo en CSS y no desde Python:
+           st.context.theme a veces informa el modo anterior y las
+           tarjetas quedaban oscuras sobre la página clara. */
+        :root {{
+            --tarjeta: {claro["tarjeta"]};
+            --sombra: {claro["sombra"]};
+            --sombra-hover: {claro["sombra_hover"]};
+        }}
+        @media (prefers-color-scheme: dark) {{
+            :root {{
+                --tarjeta: {oscuro["tarjeta"]};
+                --sombra: {oscuro["sombra"]};
+                --sombra-hover: {oscuro["sombra_hover"]};
+            }}
+        }}
+
         /* ---------- TARJETAS ----------
-           Un solo estilo para todo lo que es "tarjeta": indicadores
-           (st.metric con border=True), contenedores creados con
-           tarjeta() y hallazgos. Título en franja bordó solo en los
-           indicadores. */
+           Todo el contenido flota en tarjetas con el mismo estilo:
+           indicadores (st.metric con border=True), contenedores
+           creados con tarjeta(), hallazgos, desplegables y gráficos.
+           Título en franja bordó solo en los indicadores. */
 
         [data-testid="stMetric"],
         [class*="st-key-tarjeta_"],
-        .hallazgo {{
-            background: {tarjeta};
-            box-shadow: {SOMBRA};
+        .hallazgo,
+        [data-testid="stExpander"] details,
+        [data-testid="stPlotlyChart"] {{
+            background: var(--tarjeta);
+            box-shadow: var(--sombra);
+        }}
+        [data-testid="stExpander"] details {{
+            border-radius: 0.75rem;
+        }}
+        [data-testid="stPlotlyChart"] {{
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+        }}
+
+        /* Un gráfico dentro de otra tarjeta no lleva la suya: no se
+           apilan sombras. */
+        [data-testid="stExpander"] [data-testid="stPlotlyChart"],
+        [class*="st-key-tarjeta_"] [data-testid="stPlotlyChart"] {{
+            background: transparent;
+            box-shadow: none;
+            padding: 0;
         }}
         [data-testid="stMetric"] {{
             overflow: hidden;
@@ -195,7 +234,7 @@ def mostrar_marco():
             color: #ffffff;
         }}
         [data-testid="stMetricLabel"] svg {{
-            stroke: rgba(255, 255, 255, 0.85);
+            stroke: rgba(255, 255, 255, 0.85) !important;
         }}
         [data-testid="stMetricValue"],
         [data-testid="stMetricDelta"] {{
@@ -219,12 +258,12 @@ def mostrar_marco():
             min-height: 5.5rem;
             background: {marca};
             border-radius: 0.6rem;
-            box-shadow: {SOMBRA};
+            box-shadow: var(--sombra);
             transition: box-shadow 0.15s ease, transform 0.15s ease;
         }}
         [class*="st-key-acceso_"] a:hover {{
             background: {marca};
-            box-shadow: {SOMBRA_HOVER};
+            box-shadow: var(--sombra-hover);
             transform: translateY(-1px);
         }}
         [class*="st-key-acceso_"] a p,
