@@ -1,6 +1,6 @@
 import streamlit as st
 
-from components.navegacion import PAGINAS
+from components.navegacion import PAGINAS, TAREAS, mostrar_menu
 from views.como_nos_fue import mostrar_como_nos_fue
 from views.que_cambio import mostrar_que_cambio
 from views.proxima_jornada import mostrar_proxima_jornada
@@ -82,29 +82,11 @@ PAGINAS.update({
     ),
 })
 
-TAREAS = ["cargar_jornada", "jornadas_guardadas", "columnas", "explorar"]
-
 # El menú lo dibujamos nosotros (position="hidden"): st.navigation
 # mostraría todas las páginas, incluidas las tareas.
 pagina = st.navigation(list(PAGINAS.values()), position="hidden")
 
-with st.sidebar:
-
-    st.page_link(PAGINAS["como_nos_fue"])
-    st.page_link(PAGINAS["que_cambio"])
-    st.page_link(PAGINAS["proxima_jornada"])
-
-    st.divider()
-
-    st.page_link(PAGINAS["preparar_datos"])
-
-    tarea_actual = next(
-        (clave for clave in TAREAS if PAGINAS[clave].url_path == pagina.url_path),
-        None
-    )
-
-    if tarea_actual:
-        st.caption(f"↳ {pagina.title}")
+actual = mostrar_menu(pagina)
 
 
 # --------------------------------------------------
@@ -113,7 +95,7 @@ with st.sidebar:
 
 mostrar_marco()
 
-if tarea_actual:
+if actual in TAREAS:
     st.page_link(PAGINAS["preparar_datos"], label="Volver a Preparar datos", icon=":material/arrow_back:")
 
 pagina.run()
