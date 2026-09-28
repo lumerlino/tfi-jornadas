@@ -611,7 +611,10 @@ def mostrar_analizar_jornada():
                 if st.button(
                     "💾 Guardar datos de la jornada",
                     type="primary",
-                    use_container_width=True
+                    use_container_width=True,
+                    # Una vez guardada, un segundo clic crearía una
+                    # carga repetida de la misma jornada.
+                    disabled="carga_guardada" in st.session_state
                 ):
 
                     try:
@@ -640,6 +643,10 @@ def mostrar_analizar_jornada():
                         }
 
                         st.session_state["animar_pasos_desde"] = 4
+
+                        # Redibujar ya: así el botón queda deshabilitado
+                        # y la guía muestra todo completo.
+                        st.rerun()
 
                     else:
 
