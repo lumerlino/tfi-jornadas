@@ -119,6 +119,22 @@ PASOS_CARGA = [
 # Tiempo entre que se enciende un paso y el siguiente (segundos).
 PAUSA_ANIMACION = 0.45
 
+# Contenedor (st.container(key=...)) de cada paso en
+# views/analizar_jornada.py. El del paso actual lleva la barra
+# bordó a la izquierda. "Limpiar los datos" (2) es automático y no
+# tiene sección propia; al terminar, la barra queda en guardar,
+# donde está el botón a "Cómo nos fue".
+SECCION_POR_PASO = {
+    0: "seccion_subir",
+    1: "seccion_analizar",
+    3: "seccion_columnas",
+    4: "seccion_guardar",
+}
+
+# Un bordó intermedio (el de los controles en modo oscuro): la barra
+# es una línea fina y el del logo casi no se ve sobre fondo oscuro.
+COLOR_BARRA_SECCION = "#a12628"
+
 
 def mostrar_pasos(destino, actual, terminado=False, animar_desde=None):
 
@@ -132,6 +148,15 @@ def mostrar_pasos(destino, actual, terminado=False, animar_desde=None):
     marca = COLORES["light"]["marca"]
 
     ultimo = len(PASOS_CARGA) if terminado else actual
+
+    seccion_activa = SECCION_POR_PASO.get(4 if terminado else actual)
+
+    regla_seccion = (
+        f".st-key-{seccion_activa} {{ border-left: 4px solid "
+        f"{COLOR_BARRA_SECCION}; padding-left: 1rem; }}"
+        if seccion_activa
+        else ""
+    )
 
     items = []
 
@@ -226,6 +251,7 @@ def mostrar_pasos(destino, actual, terminado=False, animar_desde=None):
         @media (max-width: 640px) {{
             .pasos-carga {{ grid-template-columns: minmax(0, 1fr); }}
         }}
+        {regla_seccion}
         </style>
         <ol class="pasos-carga" aria-label="Pasos de la carga">
             {"".join(items)}

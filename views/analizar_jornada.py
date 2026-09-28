@@ -137,20 +137,22 @@ def mostrar_analizar_jornada():
 
         if archivo_guardado is None:
 
-            archivo = st.file_uploader(
-                "Excel de inscripción y asistencia de la jornada",
-                type=["xlsx"],
-                key=f"subir_excel_{st.session_state.get('subidas_excel', 0)}"
-            )
+            with st.container(key="seccion_subir"):
 
-            if archivo is not None:
+                archivo = st.file_uploader(
+                    "Excel de inscripción y asistencia de la jornada",
+                    type=["xlsx"],
+                    key=f"subir_excel_{st.session_state.get('subidas_excel', 0)}"
+                )
 
-                st.session_state["archivo_excel"] = {
-                    "nombre": archivo.name,
-                    "datos": archivo.getvalue()
-                }
+                if archivo is not None:
 
-                st.rerun()
+                    st.session_state["archivo_excel"] = {
+                        "nombre": archivo.name,
+                        "datos": archivo.getvalue()
+                    }
+
+                    st.rerun()
 
         else:
 
@@ -169,7 +171,10 @@ def mostrar_analizar_jornada():
             # antes de confirmar el análisis
             if not st.session_state["analisis_confirmado"]:
 
-                metadatos = mostrar_metadatos_jornada(df)
+                seccion_analizar = st.container(key="seccion_analizar")
+
+                with seccion_analizar:
+                    metadatos = mostrar_metadatos_jornada(df)
 
 
     # --------------------------------------------------
@@ -243,56 +248,58 @@ def mostrar_analizar_jornada():
 
         if opcion == "📤 Cargar archivo Excel":
 
-            if st.session_state["editar_metadatos"]:
-                texto_boton = "Guardar cambios"
-            else:
-                texto_boton = "Analizar jornada"
+            with seccion_analizar:
+
+                if st.session_state["editar_metadatos"]:
+                    texto_boton = "Guardar cambios"
+                else:
+                    texto_boton = "Analizar jornada"
 
 
-            if st.button(
-                texto_boton,
-                type="primary"
-            ):
+                if st.button(
+                    texto_boton,
+                    type="primary"
+                ):
 
-                errores_metadatos = (
-                    validar_metadatos_jornada(
-                        metadatos
-                    )
-                )
-
-                if errores_metadatos:
-
-                    st.error(
-                        "No se puede continuar."
+                    errores_metadatos = (
+                        validar_metadatos_jornada(
+                            metadatos
+                        )
                     )
 
-                    for error in errores_metadatos:
+                    if errores_metadatos:
 
-                        st.write(
-                            f"- {error}"
+                        st.error(
+                            "No se puede continuar."
                         )
 
-                else:
+                        for error in errores_metadatos:
 
-                    st.session_state[
-                        "metadatos_jornada"
-                    ] = metadatos
+                            st.write(
+                                f"- {error}"
+                            )
 
-                    st.session_state[
-                        "analisis_confirmado"
-                    ] = True
+                    else:
 
-                    st.session_state[
-                        "editar_metadatos"
-                    ] = False
+                        st.session_state[
+                            "metadatos_jornada"
+                        ] = metadatos
 
-                    st.session_state.pop("carga_guardada", None)
+                        st.session_state[
+                            "analisis_confirmado"
+                        ] = True
 
-                    # En el próximo render los pasos 2 a 4 se
-                    # "encienden" en secuencia (ver mostrar_pasos).
-                    st.session_state["animar_pasos_desde"] = 1
+                        st.session_state[
+                            "editar_metadatos"
+                        ] = False
 
-                    st.rerun()
+                        st.session_state.pop("carga_guardada", None)
+
+                        # En el próximo render los pasos 2 a 4 se
+                        # "encienden" en secuencia (ver mostrar_pasos).
+                        st.session_state["animar_pasos_desde"] = 1
+
+                        st.rerun()
 
 
         else:
@@ -441,222 +448,226 @@ def mostrar_analizar_jornada():
 
     if pendientes:
 
-        st.markdown("### 🆕 Columnas nuevas detectadas")
+        with st.container(key="seccion_columnas"):
 
-        st.write(
-            "Estas columnas del Excel no están contempladas todavía. "
-            "No se pierden (quedan guardadas igual), pero para que "
-            "aparezcan como filtro o gráfico hay que configurarlas."
-        )
+            st.markdown("### 🆕 Columnas nuevas detectadas")
 
-        for columna in pendientes:
-
-            tipo = clasificar_columna(df[columna])
-
-            with st.expander(f"{columna} (tipo detectado: {tipo})"):
-
-                if tipo in ("identificador", "texto_libre"):
-
-                    st.info(
-                        "Esta columna no se ofrece como filtro ni "
-                        "gráfico: tiene muchos valores distintos "
-                        "(puede ser un identificador o texto libre), "
-                        "y por privacidad no se expone en la app."
-                    )
-
-                else:
-
-                    nombre_display = st.text_input(
-                        "Nombre a mostrar",
-                        value=columna,
-                        key=f"nombre_{columna}"
-                    )
-
-                    metrica = st.selectbox(
-                        "¿Qué querés ver de esta columna?",
-                        METRICAS_POR_TIPO[tipo],
-                        key=f"metrica_{columna}"
-                    )
-
-                    if st.button(
-                        "Guardar configuración",
-                        key=f"guardar_config_{columna}"
-                    ):
-
-                        try:
-
-                            guardar_configuracion(
-                                columna,
-                                nombre_display,
-                                tipo,
-                                metrica
-                            )
-
-                        except Exception as error:
-
-                            mostrar_error(error, "No se pudo guardar la configuración")
-
-                        else:
-
-                            obtener_configuraciones.clear()
-
-                            st.rerun()
-
-
-    # --------------------------------------------------
-    # RESUMEN DE LA CARGA
-    #
-    # Al terminar la carga se muestra solo lo necesario para
-    # confirmar que el archivo está bien y guardarlo. El análisis
-    # (comparado con otros años) vive en "Cómo nos fue"; el tablero
-    # completo del archivo queda plegado al final.
-    # --------------------------------------------------
-
-    # La línea del archivo muestra las filas del Excel; si la
-    # limpieza descartó alguna, se aclara acá para que los dos
-    # números no parezcan contradecirse.
-    descartadas = reporte_limpieza_antes["filas"] - len(df)
-
-    if descartadas > 0:
-        st.success(
-            f"Listo: el archivo se leyó y se limpió. Quedaron "
-            f"{formatear_numero(len(df))} registros; "
-            + (
-                "se descartó 1 fila repetida o vacía."
-                if descartadas == 1
-                else f"se descartaron {formatear_numero(descartadas)} "
-                "filas repetidas o vacías."
-            )
-        )
-    else:
-        st.success(
-            f"Listo: el archivo se leyó y se limpió sin problemas "
-            f"({formatear_numero(len(df))} registros)."
-        )
-
-    if (
-        opcion == "📤 Cargar archivo Excel"
-        and st.session_state["metadatos_jornada"] is not None
-    ):
-
-        metadatos_guardados = (
-            st.session_state[
-                "metadatos_jornada"
-            ]
-        )
-
-        st.subheader(f"Jornada {metadatos_guardados['anio']}")
-
-        st.caption(
-            f"{metadatos_guardados['fecha_inicio'].strftime('%d/%m/%Y')} "
-            f"al "
-            f"{metadatos_guardados['fecha_fin'].strftime('%d/%m/%Y')}"
-        )
-
-    else:
-
-        st.subheader("Resumen de los datos")
-
-    mostrar_resumen_carga(df)
-
-    if (
-        opcion == "📤 Cargar archivo Excel"
-        and st.session_state["metadatos_jornada"] is not None
-    ):
-
-        col1, col2 = st.columns(
-            [1, 1]
-        )
-
-
-        # --------------------------------------------------
-        # EDITAR METADATA
-        # --------------------------------------------------
-
-        with col1:
-
-            if st.button(
-                "✏️ Editar datos generales",
-                use_container_width=True
-            ):
-
-                st.session_state[
-                    "editar_metadatos"
-                ] = True
-
-                st.session_state[
-                    "analisis_confirmado"
-                ] = False
-
-                st.rerun()
-
-
-        # --------------------------------------------------
-        # GUARDAR EN HISTÓRICO
-        # --------------------------------------------------
-
-        with col2:
-
-            if st.button(
-                "💾 Guardar datos de la jornada",
-                type="primary",
-                use_container_width=True
-            ):
-
-                try:
-
-                    resultado_carga = guardar_carga(
-                        df=df,
-                        metadatos=metadatos_guardados
-                    )
-
-                except Exception as error:
-
-                    resultado_carga = None
-                    error_guardado = error
-
-                if resultado_carga is not None:
-
-                    cargar_historico.clear()
-                    listar_cargas.clear()
-                    reconstruir_jornada.clear()
-
-                    # El aviso y el botón de "Cómo nos fue" tienen que
-                    # sobrevivir al rerun que dispara ese botón.
-                    st.session_state["carga_guardada"] = {
-                        "anio": metadatos_guardados["anio"],
-                        "numero_carga": resultado_carga["numero_carga"]
-                    }
-
-                    st.session_state["animar_pasos_desde"] = 4
-
-                else:
-
-                    st.session_state["error_guardado"] = error_guardado
-
-        # Fuera de las columnas, para que el aviso ocupe el ancho.
-        error_guardado = st.session_state.pop("error_guardado", None)
-
-        if error_guardado is not None:
-            mostrar_error(error_guardado, "No se pudo guardar la jornada en el histórico")
-
-        carga_guardada = st.session_state.get("carga_guardada")
-
-        if carga_guardada:
-
-            mostrar_pasos(
-                guia_pasos,
-                len(PASOS_CARGA),
-                terminado=True,
-                animar_desde=st.session_state.pop("animar_pasos_desde", None)
+            st.write(
+                "Estas columnas del Excel no están contempladas todavía. "
+                "No se pierden (quedan guardadas igual), pero para que "
+                "aparezcan como filtro o gráfico hay que configurarlas."
             )
 
+            for columna in pendientes:
+
+                tipo = clasificar_columna(df[columna])
+
+                with st.expander(f"{columna} (tipo detectado: {tipo})"):
+
+                    if tipo in ("identificador", "texto_libre"):
+
+                        st.info(
+                            "Esta columna no se ofrece como filtro ni "
+                            "gráfico: tiene muchos valores distintos "
+                            "(puede ser un identificador o texto libre), "
+                            "y por privacidad no se expone en la app."
+                        )
+
+                    else:
+
+                        nombre_display = st.text_input(
+                            "Nombre a mostrar",
+                            value=columna,
+                            key=f"nombre_{columna}"
+                        )
+
+                        metrica = st.selectbox(
+                            "¿Qué querés ver de esta columna?",
+                            METRICAS_POR_TIPO[tipo],
+                            key=f"metrica_{columna}"
+                        )
+
+                        if st.button(
+                            "Guardar configuración",
+                            key=f"guardar_config_{columna}"
+                        ):
+
+                            try:
+
+                                guardar_configuracion(
+                                    columna,
+                                    nombre_display,
+                                    tipo,
+                                    metrica
+                                )
+
+                            except Exception as error:
+
+                                mostrar_error(error, "No se pudo guardar la configuración")
+
+                            else:
+
+                                obtener_configuraciones.clear()
+
+                                st.rerun()
+
+
+    with st.container(key="seccion_guardar"):
+
+        # --------------------------------------------------
+        # RESUMEN DE LA CARGA
+        #
+        # Al terminar la carga se muestra solo lo necesario para
+        # confirmar que el archivo está bien y guardarlo. El análisis
+        # (comparado con otros años) vive en "Cómo nos fue"; el tablero
+        # completo del archivo queda plegado al final.
+        # --------------------------------------------------
+
+        # La línea del archivo muestra las filas del Excel; si la
+        # limpieza descartó alguna, se aclara acá para que los dos
+        # números no parezcan contradecirse.
+        descartadas = reporte_limpieza_antes["filas"] - len(df)
+
+        if descartadas > 0:
             st.success(
-                f"Guardada en el histórico: jornada {carga_guardada['anio']}, "
-                f"carga N.º {carga_guardada['numero_carga']}."
+                f"Listo: el archivo se leyó y se limpió. Quedaron "
+                f"{formatear_numero(len(df))} registros; "
+                + (
+                    "se descartó 1 fila repetida o vacía."
+                    if descartadas == 1
+                    else f"se descartaron {formatear_numero(descartadas)} "
+                    "filas repetidas o vacías."
+                )
+            )
+        else:
+            st.success(
+                f"Listo: el archivo se leyó y se limpió sin problemas "
+                f"({formatear_numero(len(df))} registros)."
             )
 
-            ir_a("como_nos_fue", "Ver cómo nos fue →", principal=True)
+        if (
+            opcion == "📤 Cargar archivo Excel"
+            and st.session_state["metadatos_jornada"] is not None
+        ):
+
+            metadatos_guardados = (
+                st.session_state[
+                    "metadatos_jornada"
+                ]
+            )
+
+            st.subheader(f"Jornada {metadatos_guardados['anio']}")
+
+            st.caption(
+                f"{metadatos_guardados['fecha_inicio'].strftime('%d/%m/%Y')} "
+                f"al "
+                f"{metadatos_guardados['fecha_fin'].strftime('%d/%m/%Y')}"
+            )
+
+        else:
+
+            st.subheader("Resumen de los datos")
+
+        mostrar_resumen_carga(df)
+
+        if (
+            opcion == "📤 Cargar archivo Excel"
+            and st.session_state["metadatos_jornada"] is not None
+        ):
+
+            col1, col2 = st.columns(
+                [1, 1]
+            )
+
+
+            # --------------------------------------------------
+            # EDITAR METADATA
+            # --------------------------------------------------
+
+            with col1:
+
+                if st.button(
+                    "✏️ Editar datos generales",
+                    use_container_width=True
+                ):
+
+                    st.session_state[
+                        "editar_metadatos"
+                    ] = True
+
+                    st.session_state[
+                        "analisis_confirmado"
+                    ] = False
+
+                    st.rerun()
+
+
+            # --------------------------------------------------
+            # GUARDAR EN HISTÓRICO
+            # --------------------------------------------------
+
+            with col2:
+
+                if st.button(
+                    "💾 Guardar datos de la jornada",
+                    type="primary",
+                    use_container_width=True
+                ):
+
+                    try:
+
+                        resultado_carga = guardar_carga(
+                            df=df,
+                            metadatos=metadatos_guardados
+                        )
+
+                    except Exception as error:
+
+                        resultado_carga = None
+                        error_guardado = error
+
+                    if resultado_carga is not None:
+
+                        cargar_historico.clear()
+                        listar_cargas.clear()
+                        reconstruir_jornada.clear()
+
+                        # El aviso y el botón de "Cómo nos fue" tienen que
+                        # sobrevivir al rerun que dispara ese botón.
+                        st.session_state["carga_guardada"] = {
+                            "anio": metadatos_guardados["anio"],
+                            "numero_carga": resultado_carga["numero_carga"]
+                        }
+
+                        st.session_state["animar_pasos_desde"] = 4
+
+                    else:
+
+                        st.session_state["error_guardado"] = error_guardado
+
+            # Fuera de las columnas, para que el aviso ocupe el ancho.
+            error_guardado = st.session_state.pop("error_guardado", None)
+
+            if error_guardado is not None:
+                mostrar_error(error_guardado, "No se pudo guardar la jornada en el histórico")
+
+            carga_guardada = st.session_state.get("carga_guardada")
+
+            if carga_guardada:
+
+                mostrar_pasos(
+                    guia_pasos,
+                    len(PASOS_CARGA),
+                    terminado=True,
+                    animar_desde=st.session_state.pop("animar_pasos_desde", None)
+                )
+
+                st.success(
+                    f"Guardada en el histórico: jornada {carga_guardada['anio']}, "
+                    f"carga N.º {carga_guardada['numero_carga']}."
+                )
+
+                ir_a("como_nos_fue", "Ver cómo nos fue →", principal=True)
 
 
     # --------------------------------------------------
