@@ -3,17 +3,6 @@ import streamlit as st
 
 def mostrar_indicadores(df):
 
-
-    # ----------------------------------------------
-    # PARTICIPANTES ÚNICOS
-    # ----------------------------------------------
-
-    total_personas = (
-        df["documento"]
-        .nunique()
-    )
-
-
     # ----------------------------------------------
     # INSCRIPCIONES
     # ----------------------------------------------
@@ -22,28 +11,51 @@ def mostrar_indicadores(df):
 
 
     # ----------------------------------------------
-    # ASISTENCIA
+    # PARTICIPANTES ÚNICOS Y ASISTENCIA
     # ----------------------------------------------
 
-    total_asistieron = int(
-        df["asistio"].sum()
-    )
+    tiene_documento = "documento" in df.columns
+    tiene_asistencia = "asistio" in df.columns
 
-    tasa_asistencia = (
-        total_asistieron
-        / total_inscripciones
-    ) * 100
+    total_personas = None
+    total_asistieron = None
+    tasa_asistencia = None
 
+    if tiene_documento:
 
-    # ----------------------------------------------
-    # MIEMBROS UNLA
-    # ----------------------------------------------
+        documentos_validos = (
+            df["documento"]
+            .dropna()
+            .astype(str)
+            .str.strip()
+        )
 
-    porcentaje_unla = (
-        df["Miembro UNLa"]
-        .eq("Si")
-        .mean()
-    ) * 100
+        documentos_validos = documentos_validos[
+            documentos_validos.ne("")
+            & documentos_validos.str.lower().ne("nan")
+        ]
+
+        total_personas = documentos_validos.nunique()
+
+        if tiene_asistencia:
+
+            asistencia_por_persona = (
+                df[
+                    df["documento"].notna()
+                ]
+                .groupby("documento")["asistio"]
+                .any()
+            )
+
+            total_asistieron = int(
+                asistencia_por_persona.sum()
+            )
+
+            if total_personas > 0:
+                tasa_asistencia = (
+                    total_asistieron
+                    / total_personas
+                ) * 100
 
 
     # ----------------------------------------------
@@ -54,24 +66,36 @@ def mostrar_indicadores(df):
 
     with col1:
         st.metric(
-            "Personas inscriptas",
-            total_personas
+            "Total de inscripciones",
+            total_inscripciones
         )
 
     with col2:
         st.metric(
-            "Inscripciones",
-            total_inscripciones
+            "Participantes únicos",
+            (
+                total_personas
+                if total_personas is not None
+                else "No disponible"
+            )
         )
 
     with col3:
         st.metric(
-            "Tasa de asistencia",
-            f"{tasa_asistencia:.1f}%"
+            "Asistieron",
+            (
+                total_asistieron
+                if total_asistieron is not None
+                else "No disponible"
+            )
         )
 
     with col4:
         st.metric(
-            "Miembros UNLa",
-            f"{porcentaje_unla:.1f}%"
+            "Tasa de asistencia",
+            (
+                f"{tasa_asistencia:.1f}%"
+                if tasa_asistencia is not None
+                else "No disponible"
+            )
         )

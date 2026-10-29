@@ -76,7 +76,7 @@ PAGINAS.update({
     ),
     "explorar": st.Page(
         mostrar_historico,
-        title="Explorar en detalle",
+        title="Detalle de una jornada",
         icon=":material/query_stats:",
         url_path="explorar"
     ),

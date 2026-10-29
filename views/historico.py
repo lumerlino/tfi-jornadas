@@ -23,7 +23,7 @@ from views.dashboard_jornada import mostrar_dashboard_jornada
 
 def mostrar_historico():
 
-    st.title("Explorar en detalle")
+    st.title("Detalle de una jornada")
 
     try:
 
@@ -46,134 +46,7 @@ def mostrar_historico():
         st.info("Todavía no hay jornadas guardadas en el histórico.")
         return
 
-    pestania = mostrar_tabs(
-        [
-            "📌 Resumen",
-            "📈 Evolución",
-            "👥 Composición",
-            "🔮 Proyecciones",
-            "🎛️ What-if",
-            "🔗 KPIs cruzados",
-            "🎯 Objetivos",
-            "🔍 Ver jornada"
-        ],
-        key="historico_tab"
-    )
-
-
-    # --------------------------------------------------
-    # RESUMEN
-    # --------------------------------------------------
-
-    if pestania == "📌 Resumen":
-
-        mostrar_indicadores_historicos(
-            df_historico
-        )
-
-        st.markdown(
-            "### Resumen por año"
-        )
-
-        resumen_anual = (
-            df_historico
-            .groupby("anio")
-            .agg(
-                participaciones=(
-                    "documento",
-                    "size"
-                ),
-                participantes_unicos=(
-                    "documento",
-                    "nunique"
-                )
-            )
-            .reset_index()
-            .sort_values(
-                "anio",
-                ascending=False
-            )
-        )
-
-        resumen_anual = resumen_anual.rename(
-            columns={
-                "anio": "Año",
-                "participaciones": "Participaciones",
-                "participantes_unicos": "Participantes únicos"
-            }
-        )
-
-        st.dataframe(
-            resumen_anual,
-            use_container_width=True,
-            hide_index=True
-        )
-
-
-    # --------------------------------------------------
-    # EVOLUCIÓN
-    # --------------------------------------------------
-
-    elif pestania == "📈 Evolución":
-
-        mostrar_evolucion_historica(
-            df_historico
-        )
-
-
-    # --------------------------------------------------
-    # COMPOSICIÓN
-    # --------------------------------------------------
-
-    elif pestania == "👥 Composición":
-
-        mostrar_composicion_historica(
-            df_historico
-        )
-
-
-    # --------------------------------------------------
-    # PROYECCIONES
-    # --------------------------------------------------
-
-    elif pestania == "🔮 Proyecciones":
-
-        mostrar_proyecciones(
-            df_historico
-        )
-
-
-    # --------------------------------------------------
-    # WHAT-IF
-    # --------------------------------------------------
-
-    elif pestania == "🎛️ What-if":
-
-        mostrar_escenarios(
-            df_historico
-        )
-
-
-    # --------------------------------------------------
-    # KPIS CRUZADOS
-    # --------------------------------------------------
-
-    elif pestania == "🔗 KPIs cruzados":
-
-        mostrar_kpis_cruzados(
-            df_historico
-        )
-
-
-    # --------------------------------------------------
-    # OBJETIVOS
-    # --------------------------------------------------
-
-    elif pestania == "🎯 Objetivos":
-
-        mostrar_objetivos(
-            df_historico
-        )
+    pestania = "🔍 Ver jornada"
 
 
     # --------------------------------------------------
@@ -182,7 +55,7 @@ def mostrar_historico():
     # necesidad de volver a subir el Excel).
     # --------------------------------------------------
 
-    elif pestania == "🔍 Ver jornada":
+    if pestania == "🔍 Ver jornada":
 
         try:
 
@@ -265,17 +138,3 @@ def mostrar_historico():
                     configuraciones_jornada
                 )
 
-
-    # --------------------------------------------------
-    # DATOS COMPLETOS
-    # --------------------------------------------------
-
-    with st.expander(
-        "Ver datos históricos completos"
-    ):
-
-        st.dataframe(
-            df_historico,
-            use_container_width=True,
-            hide_index=True
-        )

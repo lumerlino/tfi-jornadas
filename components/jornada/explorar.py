@@ -138,22 +138,49 @@ def renderizar_metrica(valores, nombre_display, metrica, key_prefix="explorar"):
 
 def mostrar_explorar(df, configuraciones):
 
-    st.subheader("Explorar columnas configuradas")
+    st.subheader("Variables adicionales del formulario")
+
+    columnas_principales = {
+        "Rol principal",
+        "Miembro UNLa",
+        "Tipo inscripción",
+        "Source",
+        "Investigador Carreras",
+    }
 
     columnas_activas = [
         (columna, configuracion)
         for columna, configuracion in configuraciones.items()
         if columna in df.columns
+        and columna not in columnas_principales
         and configuracion["metrica"] != "Ninguna"
     ]
 
     if not columnas_activas:
 
         st.info(
-            "No hay ninguna columna configurada con un gráfico "
-            "activo todavía (ni de las oficiales ni de las nuevas). "
-            "Se configuran desde 'Columnas nuevas detectadas' más "
-            "arriba, o se editan en «Columnas del formulario»."
+            "Esta jornada no tiene variables adicionales configuradas "
+            "para mostrar en esta sección."
+        )
+
+        st.markdown(
+            """
+            Las **Variables adicionales** son datos que aparecen en el Excel
+            pero que no forman parte de las columnas principales que la app
+            ya conoce.
+
+            Para visualizar una variable nueva en esta sección:
+
+            1. Dirigite a **Preparar datos → Nueva jornada**.
+            2. Cargá una jornada que incluya esa nueva columna en el Excel.
+            3. Durante el paso **Revisar columnas nuevas**, configurá la variable.
+            4. Elegí una visualización.
+            5. Guardá la jornada en el histórico.
+            6. Volvé a **Detalle de una jornada → Variables**.
+
+            Las columnas principales se consultan en **Participación** y los
+            registros completos de la jornada se pueden ver en **Datos**.
+            """
         )
 
         return

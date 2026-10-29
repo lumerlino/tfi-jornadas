@@ -47,11 +47,14 @@ def ir_a(clave, texto, principal=False):
 # --------------------------------------------------
 
 SECCIONES_MENU = [
-    ("Analizar", ["como_nos_fue", "que_cambio", "proxima_jornada"]),
+    (
+        "Analizar",
+        ["como_nos_fue", "que_cambio", "proxima_jornada", "explorar"]
+    ),
     ("Datos", ["preparar_datos"]),
 ]
 
-TAREAS = ["cargar_jornada", "jornadas_guardadas", "columnas", "explorar"]
+TAREAS = ["cargar_jornada", "jornadas_guardadas", "columnas"]
 
 # Nombres cortos para el menú, así cada ítem entra en una línea y
 # todos tienen la misma altura. La página conserva su título completo.

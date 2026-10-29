@@ -1,55 +1,37 @@
 import io
-import os
-
-import pandas as pd
-
 import streamlit as st
 
-from utils.carga_datos import cargar_datos_demo, cargar_excel_usuario
-from utils.transformaciones import preparar_datos
+from utils.carga_datos import cargar_excel_usuario
 from utils.validaciones import validar_columnas
 from utils.guardado_historico import (
     validar_metadatos_jornada,
-    guardar_carga,
-    COLUMNAS_PARTICIPACIONES
+    guardar_carga
 )
-from utils.clasificacion_columnas import (
-    clasificar_columna,
-    columnas_no_mapeadas,
-    METRICAS_POR_TIPO
-)
-from utils.configuracion_columnas import (
-    obtener_configuraciones,
-    guardar_configuracion,
-    CONFIGURACION_POR_DEFECTO
-)
+
 from utils.historico_datos import cargar_historico
 from utils.gestion_cargas import listar_cargas
 from utils.jornada_guardada import reconstruir_jornada
 from components.jornada.metadatos import mostrar_metadatos_jornada
 from views.dashboard_jornada import mostrar_dashboard_jornada
 from components.navegacion import ir_a
+from components.jornada.limpieza_jornada import (
+    preparar_y_mostrar_limpieza,
+)
+from components.jornada.columnas_nuevas import (
+    mostrar_columnas_nuevas,
+)
+from components.jornada.resumen_carga import (
+    mostrar_resumen_carga,
+)
+from components.jornada.cambios_formulario import (
+    mostrar_cambios_formulario,
+)
 from components.ui import (
     PASOS_CARGA,
     mostrar_archivo_cargado,
     mostrar_error,
-    mostrar_origen_datos,
-    mostrar_pasos
+    mostrar_pasos,
 )
-from utils.metricas import (
-    ayuda,
-    fuente_asistencia,
-    paso_a_paso_carga,
-    tabla_como_nos_fue,
-)
-from utils.resumen_jornadas import de_cada_10, formatear_numero
-from utils.grupos_categorias import (
-    COLUMNA_ROL,
-    agregar_grupos,
-    cambios_de_definicion,
-    roles_sin_grupo
-)
-
 
 # El tablero completo del archivo (el dashboard anterior) queda
 # oculto: abrumaba al terminar la carga. El código sigue; para
@@ -75,32 +57,17 @@ def mostrar_analizar_jornada():
 
     st.title("Nueva jornada")
 
-    demo_habilitado = (
-        os.getenv("HABILITAR_DEMO", "false").lower() == "true"
-    )
-
     # La introducción explica el recorrido completo y solo se muestra
     # mientras no hay un Excel cargado: después, la guía de pasos ya
     # dice qué sigue.
     if st.session_state.get("archivo_excel") is None:
 
-        if demo_habilitado:
+        st.write(
+            "Subí el Excel de inscripción y asistencia de la jornada "
+            "para revisarlo, limpiarlo y guardarlo en el histórico."
+        )
 
-            st.write(
-                "Subí el Excel de la jornada (o usá los datos de "
-                "demostración) para analizarlo y guardarlo en el histórico."
-            )
-
-        else:
-
-            st.write(
-                "Subí el Excel de la jornada para analizarlo y guardarlo "
-                "en el histórico."
-            )
-
-
-    # Guía de pasos: se reserva el lugar arriba y se completa más
-    # abajo, cuando ya se sabe en qué paso está la carga.
+    # La guía existe durante todo el flujo.
     guia_pasos = st.empty()
 
 
@@ -122,23 +89,7 @@ def mostrar_analizar_jornada():
     # SELECCIÓN DEL ORIGEN DE DATOS
     # --------------------------------------------------
 
-    opciones_origen = ["📤 Cargar archivo Excel"]
-
-    if demo_habilitado:
-        opciones_origen.append("🧪 Usar datos de demostración")
-
-    if len(opciones_origen) > 1:
-
-        opcion = st.radio(
-            "¿Cómo querés comenzar?",
-            opciones_origen,
-            horizontal=True
-        )
-
-    else:
-
-        opcion = opciones_origen[0]
-
+    opcion = "📤 Cargar archivo Excel"
 
     df = None
     metadatos = None
@@ -195,20 +146,6 @@ def mostrar_analizar_jornada():
 
                 with seccion_analizar:
                     metadatos = mostrar_metadatos_jornada(df)
-
-
-    # --------------------------------------------------
-    # DATOS DE DEMOSTRACIÓN
-    # --------------------------------------------------
-
-    elif opcion == "🧪 Usar datos de demostración":
-
-        st.info(
-            "Se están utilizando datos ficticios generados "
-            "para el desarrollo del prototipo."
-        )
-
-        df = cargar_datos_demo()
 
 
     # --------------------------------------------------
@@ -321,21 +258,6 @@ def mostrar_analizar_jornada():
 
                         st.rerun()
 
-
-        else:
-
-            if st.button(
-                "Analizar datos de demostración",
-                type="primary"
-            ):
-
-                st.session_state[
-                    "analisis_confirmado"
-                ] = True
-
-                st.rerun()
-
-
         return
 
 
@@ -343,231 +265,35 @@ def mostrar_analizar_jornada():
     # PREPARACIÓN Y LIMPIEZA DE LOS DATOS
     # --------------------------------------------------
 
-    # El Excel tal como se subió: lo usa el paso a paso de
-    # "¿De dónde salen estos números?" (filas originales, días sin «Si»).
-    df_original = df
-
-    df, reporte_limpieza_antes, reporte_limpieza_despues = (
-        preparar_datos(
-            df
-        )
-    )
-
-    with st.expander(
-        "🧹 Ver reporte de limpieza de datos"
-    ):
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-
-            st.markdown("**Antes de la limpieza**")
-
-            st.write(
-                f"Filas: {reporte_limpieza_antes['filas']}"
-            )
-
-            st.write(
-                f"Duplicados: {reporte_limpieza_antes['duplicados']}"
-            )
-
-            if len(reporte_limpieza_antes["nulos_por_columna"]) > 0:
-
-                st.dataframe(
-                    reporte_limpieza_antes["nulos_por_columna"]
-                    .rename("Valores faltantes"),
-                    use_container_width=True
-                )
-
-            else:
-
-                st.write("Sin valores faltantes.")
-
-        with col2:
-
-            st.markdown("**Después de la limpieza**")
-
-            st.write(
-                f"Filas: {reporte_limpieza_despues['filas']}"
-            )
-
-            st.write(
-                f"Duplicados: {reporte_limpieza_despues['duplicados']}"
-            )
-
-            if len(reporte_limpieza_despues["nulos_por_columna"]) > 0:
-
-                st.dataframe(
-                    reporte_limpieza_despues["nulos_por_columna"]
-                    .rename("Valores faltantes"),
-                    use_container_width=True
-                )
-
-            else:
-
-                st.write("Sin valores faltantes.")
-
-        columnas_asistencia_detectadas = (
-            reporte_limpieza_despues["columnas_asistencia"]
-        )
-
-        if columnas_asistencia_detectadas:
-
-            st.caption(
-                f"Columnas de asistencia detectadas: "
-                f"{', '.join(columnas_asistencia_detectadas)}. "
-                f"Inconsistencias entre 'isPresent' y la asistencia "
-                f"por día: "
-                f"{reporte_limpieza_despues['inconsistencias_asistencia']}."
-            )
-
-        else:
-
-            st.caption(
-                "Este archivo no trae columnas de asistencia por "
-                "día ('Asistencia YYYY-MM-DD') — se usa 'isPresent' "
-                "directamente como fuente de asistencia."
-            )
+    (
+        df_original,
+        df,
+        reporte_limpieza_antes,
+        reporte_limpieza_despues,
+    ) = preparar_y_mostrar_limpieza(df)
 
 
     # --------------------------------------------------
     # COLUMNAS NUEVAS: detectar, clasificar y preguntar
     # --------------------------------------------------
 
-    try:
+    configuraciones, pendientes = mostrar_columnas_nuevas(df)
 
-        configuraciones = obtener_configuraciones()
+    # Limpiar es automático:
+    # si hay columnas nuevas, estamos en el paso 4;
+    # si no, ya corresponde guardar.
 
-    except Exception:
-
-        configuraciones = CONFIGURACION_POR_DEFECTO
-
-        st.warning(
-            "No se pudo conectar con la base de configuración de "
-            "columnas. Se están usando los filtros por default — si "
-            "personalizaste algo en «Columnas del formulario», esos cambios no "
-            "se van a reflejar hasta que vuelva la conexión. Tampoco "
-            "van a aparecer columnas nuevas para configurar por ahora."
+    mostrar_pasos(
+        guia_pasos,
+        3 if pendientes else 4,
+        animar_desde=st.session_state.pop(
+            "animar_pasos_desde",
+            None
         )
-
-    columnas_nuevas = columnas_no_mapeadas(
-        df,
-        COLUMNAS_PARTICIPACIONES.keys()
     )
-
-    pendientes = [
-        columna
-        for columna in columnas_nuevas
-        if columna not in configuraciones
-    ]
-
-    # Limpiar (paso 3) es automático: si hay columnas nuevas, la
-    # persona está en el paso 4; si no, ya le toca guardar.
-    if carga_excel:
-        mostrar_pasos(
-            guia_pasos,
-            3 if pendientes else 4,
-            animar_desde=st.session_state.pop("animar_pasos_desde", None)
-        )
-
-    if pendientes:
-
-        with st.container(key="seccion_columnas"):
-
-            st.markdown("### 🆕 Columnas nuevas detectadas")
-
-            st.write(
-                "Estas columnas del Excel no están contempladas todavía. "
-                "No se pierden (quedan guardadas igual), pero para que "
-                "aparezcan como filtro o gráfico hay que configurarlas."
-            )
-
-            for columna in pendientes:
-
-                tipo = clasificar_columna(df[columna])
-
-                with st.expander(f"{columna} (tipo detectado: {tipo})"):
-
-                    if tipo in ("identificador", "texto_libre"):
-
-                        st.info(
-                            "Esta columna no se ofrece como filtro ni "
-                            "gráfico: tiene muchos valores distintos "
-                            "(puede ser un identificador o texto libre), "
-                            "y por privacidad no se expone en la app."
-                        )
-
-                    else:
-
-                        nombre_display = st.text_input(
-                            "Nombre a mostrar",
-                            value=columna,
-                            key=f"nombre_{columna}"
-                        )
-
-                        metrica = st.selectbox(
-                            "¿Qué querés ver de esta columna?",
-                            METRICAS_POR_TIPO[tipo],
-                            key=f"metrica_{columna}"
-                        )
-
-                        if st.button(
-                            "Guardar configuración",
-                            key=f"guardar_config_{columna}"
-                        ):
-
-                            try:
-
-                                guardar_configuracion(
-                                    columna,
-                                    nombre_display,
-                                    tipo,
-                                    metrica
-                                )
-
-                            except Exception as error:
-
-                                mostrar_error(error, "No se pudo guardar la configuración")
-
-                            else:
-
-                                obtener_configuraciones.clear()
-
-                                st.rerun()
 
 
     with st.container(key="seccion_guardar"):
-
-        # --------------------------------------------------
-        # RESUMEN DE LA CARGA
-        #
-        # Al terminar la carga se muestra solo lo necesario para
-        # confirmar que el archivo está bien y guardarlo. El análisis
-        # (comparado con otros años) vive en "Cómo nos fue"; el tablero
-        # completo del archivo queda plegado al final.
-        # --------------------------------------------------
-
-        # La línea del archivo muestra las filas del Excel; si la
-        # limpieza descartó alguna, se aclara acá para que los dos
-        # números no parezcan contradecirse.
-        descartadas = reporte_limpieza_antes["filas"] - len(df)
-
-        if descartadas > 0:
-            st.success(
-                f"Listo: el archivo se leyó y se limpió. Quedaron "
-                f"{formatear_numero(len(df))} registros; "
-                + (
-                    "se descartó 1 fila repetida o vacía."
-                    if descartadas == 1
-                    else f"se descartaron {formatear_numero(descartadas)} "
-                    "filas repetidas o vacías."
-                )
-            )
-        else:
-            st.success(
-                f"Listo: el archivo se leyó y se limpió sin problemas "
-                f"({formatear_numero(len(df))} registros)."
-            )
 
         mostrar_cambios_formulario(df, st.session_state.get("metadatos_jornada"))
 
@@ -642,8 +368,6 @@ def mostrar_analizar_jornada():
                     "💾 Guardar datos de la jornada",
                     type="primary",
                     use_container_width=True,
-                    # Una vez guardada, un segundo clic crearía una
-                    # carga repetida de la misma jornada.
                     disabled="carga_guardada" in st.session_state
                 ):
 
@@ -665,8 +389,6 @@ def mostrar_analizar_jornada():
                         listar_cargas.clear()
                         reconstruir_jornada.clear()
 
-                        # El aviso y el botón de "Cómo nos fue" tienen que
-                        # sobrevivir al rerun que dispara ese botón.
                         st.session_state["carga_guardada"] = {
                             "anio": metadatos_guardados["anio"],
                             "numero_carga": resultado_carga["numero_carga"]
@@ -674,8 +396,6 @@ def mostrar_analizar_jornada():
 
                         st.session_state["animar_pasos_desde"] = 4
 
-                        # Redibujar ya: así el botón queda deshabilitado
-                        # y la guía muestra todo completo.
                         st.rerun()
 
                     else:
@@ -729,119 +449,3 @@ def mostrar_analizar_jornada():
             df,
             configuraciones
         )
-
-
-def mostrar_cambios_formulario(df, metadatos):
-
-    # Advierte, antes de guardar, si el formulario cambió de un modo que
-    # afecta la comparación con otros años. Los datos se guardan igual,
-    # con sus valores originales; los grupos se aplican al comparar.
-
-    desconocidos = roles_sin_grupo(df)
-
-    if desconocidos:
-
-        lista = ", ".join(
-            f"«{valor}» ({cantidad})"
-            for valor, cantidad in list(desconocidos.items())[:6]
-        )
-
-        st.warning(
-            f"El Excel trae opciones de «Rol principal» que la app no "
-            f"reconoce: {lista}"
-            + ("…" if len(desconocidos) > 6 else "")
-            + ". Al comparar con otros años se van a contar como «Otros "
-            "perfiles». Si alguna corresponde a un grupo existente (por "
-            "ejemplo, estudiantes o docentes), avisá a quien mantiene la "
-            "app para asignarla a ese grupo.",
-            icon=":material/info:"
-        )
-
-    # Comparación con la edición anterior guardada: solo si hay
-    # conexión con la base (si no, se omite sin avisar).
-    anio = (metadatos or {}).get("anio")
-
-    if anio is None:
-        return
-
-    try:
-        historico = cargar_historico()
-    except Exception:
-        return
-
-    if historico.empty or COLUMNA_ROL not in historico.columns:
-        return
-
-    anteriores = sorted(a for a in historico["anio"].unique() if a < anio)
-
-    if not anteriores:
-        return
-
-    anio_anterior = int(anteriores[-1])
-
-    combinado = agregar_grupos(pd.concat(
-        [
-            historico[historico["anio"] == anio_anterior][["anio", COLUMNA_ROL]],
-            df[[COLUMNA_ROL]].assign(anio=anio),
-        ],
-        ignore_index=True
-    ))
-
-    definiciones = cambios_de_definicion(combinado, anio_anterior, anio)
-
-    if definiciones:
-
-        detalle = "; ".join(
-            f"«{grupo}»: " + ", ".join(antes) + " → " + ", ".join(ahora)
-            for grupo, (antes, ahora) in definiciones.items()
-        )
-
-        st.warning(
-            f"Cambiaron las opciones de «Rol principal» respecto de "
-            f"{anio_anterior} ({detalle}). La jornada se puede guardar igual; "
-            "al compararla con otros años, la app va a avisar que la "
-            "comparación por grupo es aproximada.",
-            icon=":material/info:"
-        )
-
-
-def mostrar_resumen_carga(df, df_original, columnas_dias):
-
-    personas = df.dropna(subset=["documento"])
-
-    inscriptos = personas["documento"].nunique()
-    vinieron = personas[personas["asistio"].astype(bool)]["documento"].nunique()
-
-    fuente = fuente_asistencia(df_original)
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.metric(
-            "Se anotaron",
-            formatear_numero(inscriptos),
-            border=True,
-            help=ayuda("se_anotaron")
-        )
-
-    with col2:
-        st.metric(
-            "Vinieron",
-            formatear_numero(vinieron),
-            border=True,
-            help=ayuda("vinieron", fuente)
-        )
-
-    with col3:
-        st.metric(
-            "De cada 10 inscriptos",
-            f"{de_cada_10(vinieron, inscriptos)} vinieron",
-            border=True,
-            help=ayuda("de_cada_10")
-        )
-
-    mostrar_origen_datos(
-        tabla_como_nos_fue(fuente, None, None),
-        pasos=paso_a_paso_carga(df_original, df, columnas_dias),
-        titulo_pasos="Cómo se llegó a «Vinieron» en este archivo"
-    )

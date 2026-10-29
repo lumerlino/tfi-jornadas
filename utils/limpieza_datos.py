@@ -120,21 +120,32 @@ def derivar_asistencia_jornada(asistencia_larga):
         .reset_index()
     )
 
+def derivar_asistencia_por_fila(
+        df,
+        columnas_asistencia
+    ):
+        return (
+            df[columnas_asistencia]
+            .astype(str)
+            .apply(
+                lambda columna:
+                    columna.str.strip().str.lower()
+            )
+            .eq("si")
+            .any(axis=1)
+        )
 
-def comparar_asistencia_isPresent(df, asistencia_derivada):
 
-    comparacion = df[["documento", "isPresent"]].merge(
-        asistencia_derivada,
-        on="documento",
-        how="left"
-    )
+def comparar_asistencia_isPresent(
+        df,
+        asistencia_por_fila
+    ):
+        inconsistentes = (
+            df["isPresent"].astype(bool)
+            != asistencia_por_fila.astype(bool)
+        )
 
-    inconsistentes = (
-        comparacion["isPresent"]
-        != comparacion["asistio"]
-    )
-
-    return int(inconsistentes.sum())
+        return int(inconsistentes.sum())
 
 
 # ----------------------------------------------------
@@ -182,13 +193,18 @@ def limpiar_datos(df):
             columnas_asistencia
         )
 
-        asistencia_derivada = derivar_asistencia_jornada(
-            asistencia_larga
+        asistencia_por_fila = derivar_asistencia_por_fila(
+            df_limpio,
+            columnas_asistencia
         )
 
         inconsistencias_asistencia = comparar_asistencia_isPresent(
             df_limpio,
-            asistencia_derivada
+            asistencia_por_fila
+        )
+
+        asistencia_derivada = derivar_asistencia_jornada(
+            asistencia_larga
         )
 
         df_limpio = df_limpio.rename(

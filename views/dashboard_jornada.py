@@ -1,6 +1,5 @@
 import streamlit as st
 
-from utils.filtros import aplicar_filtros
 from utils.guardado_historico import COLUMNAS_PARTICIPACIONES
 from utils.limpieza_datos import detectar_columnas_asistencia
 from utils.ui_tabs import mostrar_tabs
@@ -38,30 +37,19 @@ def mostrar_dashboard_jornada(df, configuraciones):
         ]
     ]
 
-    st.caption(
-        "ℹ️ Permanencia, Ocupación de aulas y Registro QR no están "
-        "disponibles con este sistema de inscripción: el archivo no "
-        "trae horarios de ingreso/egreso, asignación de aulas ni un "
-        "log de lecturas QR — solo el código asignado a cada "
-        "persona. Si el sistema de origen empieza a registrar esos "
-        "datos, estas vistas se pueden reactivar (el código ya "
-        "existe en components/jornada/)."
-    )
-
 
     # --------------------------------------------------
     # FILTROS
     # --------------------------------------------------
 
-    df_filtrado = aplicar_filtros(
-        df_vista,
-        configuraciones
-    )
+    df_filtrado = df_vista
 
 
     # --------------------------------------------------
     # INDICADORES
     # --------------------------------------------------
+
+    st.subheader("Resumen de la jornada")
 
     mostrar_indicadores(
         df_filtrado
@@ -79,8 +67,8 @@ def mostrar_dashboard_jornada(df, configuraciones):
         [
             "👥 Participación",
             "🔎 Calidad de datos",
+            "📈 Variables",
             "📋 Datos",
-            "📈 Explorar"
         ],
         key="dashboard_jornada_tab"
     )
@@ -100,16 +88,15 @@ def mostrar_dashboard_jornada(df, configuraciones):
         )
 
 
-    elif pestania == "📋 Datos":
-
-        mostrar_datos(
-            df_filtrado
-        )
-
-
-    elif pestania == "📈 Explorar":
+    elif pestania == "📈 Variables":
 
         mostrar_explorar(
             df_filtrado,
             configuraciones
+        )
+
+    elif pestania == "📋 Datos":
+
+         mostrar_datos(
+             df_filtrado
         )

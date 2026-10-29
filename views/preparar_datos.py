@@ -62,13 +62,6 @@ def mostrar_preparar_datos():
             "columnas",
             "Abrir",
         ),
-        (
-            "Explorar en detalle",
-            "Todos los gráficos y cruces del análisis completo, para "
-            "cuando se necesita ir más allá del resumen.",
-            "explorar",
-            "Abrir",
-        ),
     ]
 
     for columna, (titulo, descripcion, clave, boton) in zip(st.columns(len(tareas)), tareas):
